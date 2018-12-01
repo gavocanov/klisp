@@ -1,0 +1,4 @@
+headers = ../../linenoise/linenoise.h
+
+compilerOpts.osx = -I/usr/local/include -I/usr/include
+linkerOpts.osx = -Lbuild/linenoise -llinenoise

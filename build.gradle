@@ -18,6 +18,11 @@ kotlin {
             compilations.main.outputKinds 'EXECUTABLE'
             // Change to specify fully qualified name of your application's entry point:
             compilations.main.entryPoint 'klisp.main'
+            compilations.main.cinterops {
+                linenoise {
+                    includeDirs 'src/nativeInterop/cinterop'
+                }
+            }
         }
     }
 
