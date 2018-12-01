@@ -1,4 +1,17 @@
+@file:Suppress("SpellCheckingInspection")
+
 package klisp
+
+import kotlinx.cinterop.toKString
+import linenoise.linenoise
+import linenoise.linenoiseHistoryAdd
+import linenoise.linenoiseHistoryLoad
+import linenoise.linenoiseHistorySave
+import linenoise.linenoiseHistorySetMaxLen
+import platform.posix.exit
+import platform.posix.fclose
+import platform.posix.fopen
+import platform.posix.getenv
 
 fun tokenize(s: String) = s
         .replace("\n", "")
@@ -78,16 +91,41 @@ fun eval(x: exp, env: MutableMap<symbol, exp> = stdEnv): exp {
     }
 }
 
+fun getHistoryFileName(): String {
+    val home = getenv("HOME")?.toKString() ?: throw IllegalStateException("failed to determine user home")
+    return "$home/.kl_history"
+}
+
+fun loadHistory(fname: String): Boolean {
+    val file = fopen(fname, "a+")
+    fclose(file)
+    linenoiseHistorySetMaxLen(64_000)
+    val loaded = linenoiseHistoryLoad(fname) == 0
+    if (!loaded)
+        println("failed to load history file $fname")
+    return loaded
+}
+
+fun saveToHistory(l: String, fname: String, save: Boolean = true) {
+    linenoiseHistoryAdd(l)
+    if (save) linenoiseHistorySave(fname)
+}
+
+fun readLine() =
+        linenoise("kl -> ")?.toKString()
+
 fun main(args: Array<String>) {
+    val historyFileName = getHistoryFileName()
+    val historyLoaded = loadHistory(historyFileName)
     while (true) {
-        print("kl -> ")
-        val s = readLine() ?: throw IllegalStateException("failed to read input")
+        val line = readLine() ?: return exit(0)
         val res = try {
-            eval(parse(s))
+            val r = eval(parse(line))
+            saveToHistory(line, historyFileName, historyLoaded)
+            r
         } catch (t: Throwable) {
             t.message
         }
         println(res)
     }
 }
-
