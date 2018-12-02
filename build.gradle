@@ -12,7 +12,7 @@ kotlin {
         fromPreset(presets.macosX64, 'nat')
 
         configure([nat]) {
-            compilations.main.outputKinds 'EXECUTABLE'
+            compilations.main.outputKinds 'executable'
             compilations.main.entryPoint 'klisp.main'
             compilations.main.cinterops {
                 linenoise {

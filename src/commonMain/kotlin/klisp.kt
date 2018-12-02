@@ -74,7 +74,7 @@ fun profile(fn: () -> Any): Any =
         }
 
 @Suppress("IMPLICIT_CAST_TO_ANY")
-fun eval(x: exp, env: MutableMap<symbol, exp> = stdEnv): exp {
+fun eval(x: exp, env: env = stdEnv): exp {
     return when {
         x is symbol && x.value == "profile" -> {
             PROFILE = !PROFILE
@@ -93,6 +93,14 @@ fun eval(x: exp, env: MutableMap<symbol, exp> = stdEnv): exp {
         }
         x is bool -> x
         x is number<*> -> x
+        x is list && x.value[0] == symbol("lambda") -> {
+            val (_, params, body) = x.value
+            return procedure(params, body, env)
+        }
+        x is list && x.value[0] == symbol("quote") -> {
+            val (_, exp) = x.value
+            return exp
+        }
         x is list && x.value[0] == symbol("unless") -> {
             val (_, test: exp, conseq) = x.value
             if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
