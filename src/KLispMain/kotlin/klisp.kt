@@ -12,6 +12,9 @@ import platform.posix.exit
 import platform.posix.fclose
 import platform.posix.fopen
 import platform.posix.getenv
+import kotlin.system.getTimeNanos
+
+var PROFILE = false
 
 fun tokenize(s: String) = s
         .replace("\n", "")
@@ -40,42 +43,86 @@ fun readFromTokens(tokens: MutableList<String>): exp {
     }
 }
 
-fun parseAtom(s: String): atom = try {
-    int(s.toInt())
-} catch (_: Throwable) {
-    try {
-        float(s.toFloat())
-    } catch (_: Throwable) {
-        symbol(s)
-    }
-}
+fun parseAtom(s: String): atom =
+        try {
+            byte(s.toByte())
+        } catch (_: Throwable) {
+            try {
+                short(s.toShort())
+            } catch (_: Throwable) {
+                try {
+                    int(s.toInt())
+                } catch (_: Throwable) {
+                    try {
+                        long(s.toLong())
+                    } catch (_: Throwable) {
+                        try {
+                            float(s.toFloat())
+                        } catch (_: Throwable) {
+                            try {
+                                double(s.toDouble())
+                            } catch (_: Throwable) {
+                                string(s)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-fun eval(x: exp, env: MutableMap<symbol, exp> = stdEnv): exp {
+fun profile(fn: () -> Any): Any =
+        if (!PROFILE)
+            fn()
+        else {
+            val s = getTimeNanos()
+            val r = fn()
+            val e = getTimeNanos()
+            println(":took ${(e - s) / 1e6}ms (${e - s}ns)")
+            r
+        }
+
+@Suppress("IMPLICIT_CAST_TO_ANY")
+fun eval(x: exp, env: MutableMap<string, exp> = stdEnv): exp {
     return when {
-        x is symbol -> try {
+        x is string && x.value == "profile" -> {
+            PROFILE = !PROFILE
+            bool(PROFILE)
+        }
+        x is string && (x.value == "env" || x.value == "ls") -> {
+            env.forEach {
+                val (k, _v) = it
+                val v = when (_v) {
+                    is func -> "function"
+                    else -> _v
+                }
+                println("$k: $v")
+            }
+            unit
+        }
+        x is string -> try {
             env[x] as exp
         } catch (_: Throwable) {
-            throw IllegalStateException("unknown symbol '$x'")
+            throw IllegalStateException("unknown symbole '$x'")
         }
         x is bool -> x
-        x is number -> x
-        x is list && x.value[0] == symbol("unless") -> {
+        x is number<*> -> x
+        x is list && x.value[0] == string("unless") -> {
             val (_, test: exp, conseq) = x.value
             if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
         }
-        x is list && x.value[0] == symbol("when") -> {
+        x is list && x.value[0] == string("when") -> {
             val (_, test: exp, conseq) = x.value
             if ((eval(test, env) as bool).value) eval(conseq, env) else unit
         }
-        x is list && x.value[0] == symbol("if") -> {
+        x is list && x.value[0] == string("if") -> {
             val (_, test: exp, conseq, alt) = x.value
             val exp = if ((eval(test, env) as bool).value) conseq else alt
             eval(exp, env)
         }
-        x is list && x.value[0] == symbol("def") -> {
+        x is list && x.value[0] == string("def") -> {
             val (_, s: exp, e) = x.value
-            env[s as symbol] = eval(e, env)
-            unit
+            env[s as string] = eval(e, env)
+            env[s] as exp
         }
         else -> {
             x as list
@@ -117,10 +164,11 @@ fun readLine() =
 fun main(args: Array<String>) {
     val historyFileName = getHistoryFileName()
     val historyLoaded = loadHistory(historyFileName)
+
     while (true) {
         val line = readLine() ?: return exit(0)
         val res = try {
-            val r = eval(parse(line))
+            val r = profile { eval(parse(line)) }
             saveToHistory(line, historyFileName, historyLoaded)
             r
         } catch (t: Throwable) {
