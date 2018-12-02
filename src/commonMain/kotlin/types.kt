@@ -41,9 +41,9 @@ data class char(val value: Char) : atom() {
     }
 }
 
-data class string(val value: String) : atom() {
+data class symbol(val value: String) : atom() {
     override fun toString(): String {
-        return ":string $value"
+        return ":symbol $value"
     }
 }
 

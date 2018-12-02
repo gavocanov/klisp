@@ -65,7 +65,7 @@ fun compare(op: CompareOps, args: List<exp>): Boolean {
 }
 
 fun isa(type: Types, args: List<exp>): exp {
-    require(args.size == 1) { "$type? must have 1 argument, got ${args.size}" }
+    require(args.size == 1) { "$type? should have 1 argument, got ${args.size}" }
     val value = args.first()
     return bool(
             try {
@@ -77,7 +77,7 @@ fun isa(type: Types, args: List<exp>): exp {
                     Types.float -> value as float
                     Types.double -> value as double
                     Types.char -> value as char
-                    Types.string -> value as string
+                    Types.string -> value as symbol
                     Types.bool -> value as bool
                 }
                 true

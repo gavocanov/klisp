@@ -1,18 +1,4 @@
-@file:Suppress("SpellCheckingInspection")
-
 package klisp
-
-import kotlinx.cinterop.toKString
-import linenoise.linenoise
-import linenoise.linenoiseHistoryAdd
-import linenoise.linenoiseHistoryLoad
-import linenoise.linenoiseHistorySave
-import linenoise.linenoiseHistorySetMaxLen
-import platform.posix.exit
-import platform.posix.fclose
-import platform.posix.fopen
-import platform.posix.getenv
-import kotlin.system.getTimeNanos
 
 var PROFILE = false
 
@@ -57,12 +43,18 @@ fun parseAtom(s: String): atom =
                         long(s.toLong())
                     } catch (_: Throwable) {
                         try {
-                            float(s.toFloat())
+                            val f = float(s.toFloat())
+                            if (f.value.isInfinite() || f.value.isNaN())
+                                throw IllegalStateException()
+                            else f
                         } catch (_: Throwable) {
                             try {
-                                double(s.toDouble())
+                                val d = double(s.toDouble())
+                                if (d.value.isInfinite() || d.value.isNaN())
+                                    throw IllegalStateException()
+                                else d
                             } catch (_: Throwable) {
-                                string(s)
+                                symbol(s)
                             }
                         }
                     }
@@ -77,51 +69,46 @@ fun profile(fn: () -> Any): Any =
             val s = getTimeNanos()
             val r = fn()
             val e = getTimeNanos()
-            println(":took ${(e - s) / 1e6}ms (${e - s}ns)")
+            println(":*took* ${((e - s) / 1e6)} ms")
             r
         }
 
 @Suppress("IMPLICIT_CAST_TO_ANY")
-fun eval(x: exp, env: MutableMap<string, exp> = stdEnv): exp {
+fun eval(x: exp, env: MutableMap<symbol, exp> = stdEnv): exp {
     return when {
-        x is string && x.value == "profile" -> {
+        x is symbol && x.value == "profile" -> {
             PROFILE = !PROFILE
             bool(PROFILE)
         }
-        x is string && (x.value == "env" || x.value == "ls") -> {
-            env.forEach {
-                val (k, _v) = it
-                val v = when (_v) {
-                    is func -> "function"
-                    else -> _v
-                }
-                println("$k: $v")
+        x is symbol && (x.value == "env" || x.value == "ls") -> {
+            env.forEach { (k, v) ->
+                println("$k -> $v")
             }
             unit
         }
-        x is string -> try {
+        x is symbol -> try {
             env[x] as exp
         } catch (_: Throwable) {
-            throw IllegalStateException("unknown symbole '$x'")
+            throw IllegalStateException("unknown symbol <${x.value}>")
         }
         x is bool -> x
         x is number<*> -> x
-        x is list && x.value[0] == string("unless") -> {
+        x is list && x.value[0] == symbol("unless") -> {
             val (_, test: exp, conseq) = x.value
             if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
         }
-        x is list && x.value[0] == string("when") -> {
+        x is list && x.value[0] == symbol("when") -> {
             val (_, test: exp, conseq) = x.value
             if ((eval(test, env) as bool).value) eval(conseq, env) else unit
         }
-        x is list && x.value[0] == string("if") -> {
+        x is list && x.value[0] == symbol("if") -> {
             val (_, test: exp, conseq, alt) = x.value
             val exp = if ((eval(test, env) as bool).value) conseq else alt
             eval(exp, env)
         }
-        x is list && x.value[0] == string("def") -> {
+        x is list && x.value[0] == symbol("def") -> {
             val (_, s: exp, e) = x.value
-            env[s as string] = eval(e, env)
+            env[s as symbol] = eval(e, env)
             env[s] as exp
         }
         else -> {
@@ -138,35 +125,12 @@ fun eval(x: exp, env: MutableMap<string, exp> = stdEnv): exp {
     }
 }
 
-fun getHistoryFileName(): String {
-    val home = getenv("HOME")?.toKString() ?: throw IllegalStateException("failed to determine user home")
-    return "$home/.kl_history"
-}
-
-fun loadHistory(fname: String): Boolean {
-    val file = fopen(fname, "a+")
-    fclose(file)
-    linenoiseHistorySetMaxLen(64_000)
-    val loaded = linenoiseHistoryLoad(fname) == 0
-    if (!loaded)
-        println("failed to load history file $fname")
-    return loaded
-}
-
-fun saveToHistory(l: String, fname: String, save: Boolean = true) {
-    linenoiseHistoryAdd(l)
-    if (save) linenoiseHistorySave(fname)
-}
-
-fun readLine() =
-        linenoise("kl -> ")?.toKString()
-
 fun main(args: Array<String>) {
     val historyFileName = getHistoryFileName()
     val historyLoaded = loadHistory(historyFileName)
 
     while (true) {
-        val line = readLine() ?: return exit(0)
+        val line = readLine("kl -> ") ?: return exit(0)
         val res = try {
             val r = profile { eval(parse(line)) }
             saveToHistory(line, historyFileName, historyLoaded)
