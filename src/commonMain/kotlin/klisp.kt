@@ -95,7 +95,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
         x is number<*> -> x
         x is list && x.value[0] == symbol("lambda") -> {
             val (_, params, body) = x.value
-            return procedure(params, body, env)
+            return lam(params, body, env)
         }
         x is list && x.value[0] == symbol("quote") -> {
             val (_, exp) = x.value
@@ -114,7 +114,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
             val exp = if ((eval(test, env) as bool).value) conseq else alt
             eval(exp, env)
         }
-        x is list && x.value[0] == symbol("def") -> {
+        x is list && (x.value[0] == symbol("def") || x.value[0] == symbol("define")) -> {
             val (_, s: exp, e) = x.value
             env[s as symbol] = eval(e, env)
             env[s] as exp
@@ -144,7 +144,7 @@ fun main(args: Array<String>) {
             saveToHistory(line, historyFileName, historyLoaded)
             r
         } catch (t: Throwable) {
-            t.message
+            t.message ?: t
         }
         println(res)
     }

@@ -12,7 +12,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         args.all { it is byte } -> {
             when (op) {
                 mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as byte).value })
-                mathOp.minus -> long(args.fold(0L) { a, n -> a - (n as byte).value })
+                mathOp.minus -> long(args.drop(1).fold((args.first() as byte).value.toLong()) { a, n -> a - (n as byte).value })
                 mathOp.div -> double(args.drop(1).fold((args.first() as byte).value.toDouble()) { a, n -> a / (n as byte).value })
                 mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as byte).value })
             }
@@ -20,7 +20,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         args.all { it is short } -> {
             when (op) {
                 mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as short).value })
-                mathOp.minus -> long(args.fold(0L) { a, n -> a - (n as short).value })
+                mathOp.minus -> long(args.drop(1).fold((args.first() as short).value.toLong()) { a, n -> a - (n as short).value })
                 mathOp.div -> double(args.drop(1).fold((args.first() as short).value.toDouble()) { a, n -> a / (n as short).value })
                 mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as short).value })
             }
@@ -28,15 +28,23 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         args.all { it is int } -> {
             when (op) {
                 mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as int).value })
-                mathOp.minus -> long(args.fold(0L) { a, n -> a - (n as int).value })
+                mathOp.minus -> long(args.drop(1).fold((args.first() as int).value.toLong()) { a, n -> a - (n as int).value })
                 mathOp.div -> double(args.drop(1).fold((args.first() as int).value.toDouble()) { a, n -> a / (n as int).value })
                 mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as int).value })
+            }
+        }
+        args.all { it is long } -> {
+            when (op) {
+                mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as long).value })
+                mathOp.minus -> long(args.drop(1).fold((args.first() as long).value) { a, n -> a - (n as long).value })
+                mathOp.div -> double(args.drop(1).fold((args.first() as long).value.toDouble()) { a, n -> a / (n as long).value })
+                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as long).value })
             }
         }
         args.all { it is float } -> {
             when (op) {
                 mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as float).value })
-                mathOp.minus -> double(args.fold(0.0) { a, n -> a - (n as float).value })
+                mathOp.minus -> double(args.drop(1).fold((args.first() as float).value.toDouble()) { a, n -> a - (n as float).value })
                 mathOp.div -> double(args.drop(1).fold((args.first() as float).value.toDouble()) { a, n -> a / (n as float).value })
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as float).value })
             }
@@ -44,7 +52,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         args.all { it is double } -> {
             when (op) {
                 mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as double).value })
-                mathOp.minus -> double(args.fold(0.0) { a, n -> a - (n as double).value })
+                mathOp.minus -> double(args.drop(1).fold((args.first() as double).value) { a, n -> a - (n as double).value })
                 mathOp.div -> double(args.drop(1).fold((args.first() as double).value) { a, n -> a / (n as double).value })
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as double).value })
             }
@@ -52,7 +60,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         else -> {
             when (op) {
                 mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as number<*>).asDouble })
-                mathOp.minus -> double(args.fold(0.0) { a, n -> a - (n as number<*>).asDouble })
+                mathOp.minus -> double(args.drop(1).fold((args.first() as number<*>).asDouble) { a, n -> a - (n as number<*>).asDouble })
                 mathOp.div -> double(args.drop(1).fold((args.first() as number<*>).asDouble) { a, n -> a / (n as number<*>).asDouble })
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as number<*>).asDouble })
             }
@@ -119,7 +127,16 @@ fun range(args: exps): list {
     return list((f.asLong..l.asLong).map(::long))
 }
 
-fun procedure(params: exp, body: exp, env: env): exp {
-    require(params is list) {"parameters should be a list"}
-    return symbol("\nenv:\n$env\nparams:\n$params\nbody:\n$body")
+@Suppress("USELESS_CAST") // needed for native target
+fun lam(argNames: exp, body: exp, env: env): exp {
+    require(argNames is list) { "arguments should be a list" }
+    argNames as list
+    require(argNames.value.all { it is symbol }) { "argument names should all be valid symbols" }
+    require(body is list) { "body should be a list" }
+    val _argNames = argNames.value.map { it as symbol }
+    return func { argVals ->
+        val localEnv = _argNames.zip(argVals).toMap()
+        val map = env.toMap() + localEnv
+        eval(body, map.toMutableMap())
+    }
 }

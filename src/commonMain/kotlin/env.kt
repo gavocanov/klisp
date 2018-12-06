@@ -10,6 +10,7 @@ val stdEnv: MutableMap<symbol, exp> = mutableMapOf(
         symbol("MAX_FLOAT") to float(Float.MAX_VALUE),
         symbol("MAX_DOUBLE") to double(Double.MAX_VALUE),
         symbol("PI") to double(PI),
+        symbol("pi") to double(PI),
         symbol("true") to bool(true),
         symbol("false") to bool(false),
         symbol("begin") to func(::begin),
