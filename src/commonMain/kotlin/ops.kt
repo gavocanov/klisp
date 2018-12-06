@@ -140,3 +140,19 @@ fun lam(argNames: exp, body: exp, env: env): exp {
         eval(body, map.toMutableMap())
     }
 }
+
+@Suppress("USELESS_CAST") // needed for native target
+fun map(exp: exp, col: exp): exp {
+    require(col is list) { "second argument should be a list" }
+    col as list
+    return when (val e = eval(exp)) {
+        is func -> {
+            val f = (eval(exp) as func).func
+            list(col.value.map { f(listOf(it)) })
+        }
+        is atom -> {
+            list(col.value.map { exp })
+        }
+        else -> throw IllegalArgumentException("can't handle exp <$e>")
+    }
+}

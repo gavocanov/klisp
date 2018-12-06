@@ -93,6 +93,11 @@ fun eval(x: exp, env: env = stdEnv): exp {
         }
         x is bool -> x
         x is number<*> -> x
+        x is list && x.value[0] == symbol("map") -> {
+            val (_, exp, list) = x.value
+            val col = eval(list)
+            return map(exp, col)
+        }
         x is list && x.value[0] == symbol("lambda") -> {
             val (_, params, body) = x.value
             return lam(params, body, env)

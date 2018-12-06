@@ -46,12 +46,6 @@ object unit : atom() {
     }
 }
 
-data class lambda(val args: List<exp>, val body: List<exp>, val env: env) : exp() {
-    override fun toString(): String {
-        return ":lambda, args: $args, body: $body"
-    }
-}
-
 data class func(val func: (List<exp>) -> exp) : exp() {
     override fun toString(): String {
         return ":func"
