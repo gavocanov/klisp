@@ -7,7 +7,6 @@ fun begin(args: exps): exp {
 
 fun foldableMathOp(op: mathOp, args: exps): exp {
     require(args.size >= 2) { "$op expects at least 2 arguments" }
-    require(args.all { it is number<*> }) { "$op expects all numeric arguments" }
     return when {
         args.all { it is byte } -> {
             when (op) {
@@ -57,7 +56,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as double).value })
             }
         }
-        else -> {
+        args.all { it is number<*> } -> {
             when (op) {
                 mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as number<*>).asDouble })
                 mathOp.minus -> double(args.drop(1).fold((args.first() as number<*>).asDouble) { a, n -> a - (n as number<*>).asDouble })
@@ -65,6 +64,25 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as number<*>).asDouble })
             }
         }
+        args.all { it is string || it is number<*> } -> {
+            when (op) {
+                mathOp.plus -> {
+                    val s = args.joinToString("") { e ->
+                        when (e) {
+                            is number<*> -> e.value.toString()
+                            is string -> e.value.replace("\"", "")
+                            else -> throw IllegalStateException("this should not be....")
+                        }
+                    }
+                    string("\"$s\"")
+                }
+                mathOp.minus -> TODO()
+                mathOp.div -> TODO()
+                mathOp.mul -> TODO()
+            }
+        }
+        else ->
+            throw IllegalArgumentException("$op for arguments of type <${args.map { it::class.simpleName }.joinToString(", ")}> is not supported")
     }
 }
 
@@ -138,10 +156,10 @@ fun range(args: exps): coll {
 
 @Suppress("USELESS_CAST") // needed for native target
 fun lam(argNames: exp, body: exp, env: env): exp {
-    require(argNames is list) { "arguments should be a list" }
-    argNames as list
+    require(argNames is _list) { "arguments should be a list" }
+    argNames as _list
     require(argNames.value.all { it is symbol }) { "argument names should all be valid symbols" }
-    require(body is list) { "body should be a list" }
+    require(body is _list) { "body should be a list" }
     val _argNames = argNames.value.map { it as symbol }
     return func { argVals ->
         val map = ChainMap(env)
@@ -160,6 +178,7 @@ fun fmap(exp: exp, list: exp): exp {
             list(list.value.map { f(listOf(it)) })
         }
         is atom -> list(list.value.map { exp })
+        is _list -> throw IllegalStateException("this should not be...")
     }
 }
 

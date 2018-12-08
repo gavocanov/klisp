@@ -33,7 +33,7 @@ fun readFromTokens(tokens: MutableList<String>): exp {
             while (tokens[0] != ")")
                 l.add(readFromTokens(tokens))
             tokens.removeAt(0)
-            list(l)
+            _list(l)
         }
         ")" -> throw IllegalStateException("unexpected )")
         else -> parseAtom(token)
@@ -125,7 +125,7 @@ fun eval(x: exp, env: env = stdEnv): exp = when {
     x is number<*> -> x
     x is string -> x
     x is char -> x
-    x is list && x.value[0] is keyword -> {
+    x is _list && x.value[0] is keyword -> {
         val (k, v) = x.value
         val m = try {
             eval(v) as map
@@ -134,47 +134,51 @@ fun eval(x: exp, env: env = stdEnv): exp = when {
         }
         m[k as keyword] ?: unit
     }
-    x is list && x.value[0] == symbol("map") -> {
+    x is _list && x.value[0] == symbol("map") -> {
         val (_, _exp, _list) = x.value
         val list = eval(_list) as coll
         val exp = eval(_exp)
         fmap(exp, list)
     }
-    x is list && x.value[0] == symbol("lambda") -> {
+    x is _list && x.value[0] == symbol("lambda") -> {
         val (_, params, body) = x.value
         lam(params, body, env)
     }
-    x is list && x.value[0] == symbol("quote") -> {
+    x is _list && x.value[0] == symbol("quote") -> {
         val (_, exp) = x.value
         exp
     }
-    x is list && x.value[0] == symbol("unless") -> {
+    x is _list && x.value[0] == symbol("unless") -> {
         val (_, test: exp, conseq) = x.value
         if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
     }
-    x is list && x.value[0] == symbol("when") -> {
+    x is _list && x.value[0] == symbol("when") -> {
         val (_, test: exp, conseq) = x.value
         if ((eval(test, env) as bool).value) eval(conseq, env) else unit
     }
-    x is list && x.value[0] == symbol("if") -> {
+    x is _list && x.value[0] == symbol("if") -> {
         val (_, test: exp, conseq, alt) = x.value
         val exp = if ((eval(test, env) as bool).value) conseq else alt
         eval(exp, env)
     }
-    x is list && (x.value[0] == symbol("def") || x.value[0] == symbol("define")) -> {
+    x is _list && (x.value[0] == symbol("def") || x.value[0] == symbol("define")) -> {
         val (_, s: exp, e) = x.value
         env[s as symbol] = eval(e, env)
         env[s] as exp
     }
-    x is coll && x[0] !is symbol -> x
+    x is coll -> x
     x is map -> x
     else -> {
-        x as list
+        x as _list
         val exp = x.value[0]
-        val proc = eval(exp, env)
+        val proc = try {
+            eval(exp, env) as func
+        } catch (_: Throwable) {
+            throw IllegalArgumentException("first argument should be a function")
+        }
         val args = x.value.drop(1).map { eval(it, env) }
         try {
-            val res = (proc as func).func(args)
+            val res = proc.func(args)
             env[symbol("$")] = res
             res
         } catch (t: Throwable) {

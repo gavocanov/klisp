@@ -43,9 +43,15 @@ sealed class atom : exp() {
     }
 }
 
+object nil : atom() {
+    override fun toString(): String = ":nil"
+}
+
 object unit : atom() {
     override fun toString(): String = ":unit"
 }
+
+data class _list(val value: List<exp>): exp()
 
 sealed class number<T : Number>(open val value: T) : atom() {
     open val asDouble: Double by lazy { value.toDouble() }
