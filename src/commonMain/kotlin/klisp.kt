@@ -1,13 +1,24 @@
 package klisp
 
 var PROFILE = false
+var DEBUG = false
 
-fun tokenize(s: String) = s
-        .replace("\n", "")
-        .replace("(", " ( ")
-        .replace(")", " ) ")
-        .split(" ")
-        .filter(String::isNotBlank)
+fun tokenize(s: String): List<String> {
+    val p = s
+            .replace("\n", "")
+            .replace("(", " ( ")
+            .replace(")", " ) ")
+    return split(p)
+            .also { if (DEBUG) println("parsed as: $it") }
+}
+
+// split by space not contained in "", '', [] and {}
+private fun split(s: String): List<String> =
+        "[^\\s\"'{\\[]+|\"([^\"]*)\"|'([^']*)'|\\{([^{]*)}|\\[([^\\[]*)]"
+                .toRegex()
+                .findAll(s)
+                .map { it.value }
+                .toList()
 
 fun parse(s: String): exp =
         readFromTokens(tokenize(s).toMutableList())
@@ -29,7 +40,22 @@ fun readFromTokens(tokens: MutableList<String>): exp {
     }
 }
 
-fun parseAtom(s: String): atom =
+fun parseAtom(s: String): atom = when {
+    s.startsWith(':') -> keyword(s)
+    s.startsWith('"') && s.endsWith('"') -> string(s)
+    s.startsWith('\'') && s.endsWith('\'') && s.length == 3 -> char(s[1])
+    s.startsWith('[') && s.endsWith(']') -> list(
+            split(s.substringAfter("[").substringBeforeLast("]")).map(::parseAtom)
+    )
+    s.startsWith('{') && s.endsWith('}') -> {
+        val l = split(s.substringAfter("{").substringBeforeLast("}"))
+        val keys = l.filter { it.startsWith(':') }
+        val vals = (l - keys)
+        map(keys.zip(vals).map { (k, v) ->
+            keyword(k) to parseAtom(v)
+        }.toMap())
+    }
+    else -> {
         try {
             byte(s.toByte())
         } catch (_: Throwable) {
@@ -61,10 +87,11 @@ fun parseAtom(s: String): atom =
                 }
             }
         }
+    }
+}
 
 fun profile(fn: () -> Any): Any =
-        if (!PROFILE)
-            fn()
+        if (!PROFILE) fn()
         else {
             val s = getTimeNanos()
             val r = fn()
@@ -73,67 +100,85 @@ fun profile(fn: () -> Any): Any =
             r
         }
 
-@Suppress("IMPLICIT_CAST_TO_ANY")
-fun eval(x: exp, env: env = stdEnv): exp {
-    return when {
-        x is symbol && x.value == "profile" -> {
-            PROFILE = !PROFILE
-            bool(PROFILE)
+fun eval(x: exp, env: env = stdEnv): exp = when {
+    x is symbol && x.value == "debug" -> {
+        DEBUG = !DEBUG
+        bool(DEBUG)
+    }
+    x is symbol && x.value == "profile" -> {
+        PROFILE = !PROFILE
+        bool(PROFILE)
+    }
+    x is symbol && (x.value == "env" || x.value == "ls") -> {
+        env.forEach { (k, v) ->
+            println("$k -> $v")
         }
-        x is symbol && (x.value == "env" || x.value == "ls") -> {
-            env.forEach { (k, v) ->
-                println("$k -> $v")
-            }
-            unit
-        }
-        x is symbol -> try {
-            env[x] as exp
+        unit
+    }
+    x is symbol -> try {
+        env[x] as exp
+    } catch (_: Throwable) {
+        throw IllegalStateException("unknown symbol <${x.value}>")
+    }
+    x is keyword -> x
+    x is bool -> x
+    x is number<*> -> x
+    x is string -> x
+    x is char -> x
+    x is list && x.value[0] is keyword -> {
+        val (k, v) = x.value
+        val m = try {
+            eval(v) as map
         } catch (_: Throwable) {
-            throw IllegalStateException("unknown symbol <${x.value}>")
+            throw IllegalArgumentException("second arguments should eval to a map")
         }
-        x is bool -> x
-        x is number<*> -> x
-        x is list && x.value[0] == symbol("map") -> {
-            val (_, exp, list) = x.value
-            val col = eval(list)
-            return map(exp, col)
-        }
-        x is list && x.value[0] == symbol("lambda") -> {
-            val (_, params, body) = x.value
-            return lam(params, body, env)
-        }
-        x is list && x.value[0] == symbol("quote") -> {
-            val (_, exp) = x.value
-            return exp
-        }
-        x is list && x.value[0] == symbol("unless") -> {
-            val (_, test: exp, conseq) = x.value
-            if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
-        }
-        x is list && x.value[0] == symbol("when") -> {
-            val (_, test: exp, conseq) = x.value
-            if ((eval(test, env) as bool).value) eval(conseq, env) else unit
-        }
-        x is list && x.value[0] == symbol("if") -> {
-            val (_, test: exp, conseq, alt) = x.value
-            val exp = if ((eval(test, env) as bool).value) conseq else alt
-            eval(exp, env)
-        }
-        x is list && (x.value[0] == symbol("def") || x.value[0] == symbol("define")) -> {
-            val (_, s: exp, e) = x.value
-            env[s as symbol] = eval(e, env)
-            env[s] as exp
-        }
-        else -> {
-            x as list
-            val exp = x.value[0]
-            val proc = eval(exp, env)
-            val args = x.value.drop(1).map { eval(it, env) }
-            try {
-                (proc as func).func(args)
-            } catch (t: Throwable) {
-                throw t.cause ?: t
-            }
+        m[k as keyword] ?: unit
+    }
+    x is list && x.value[0] == symbol("map") -> {
+        val (_, _exp, _list) = x.value
+        val list = eval(_list) as coll
+        val exp = eval(_exp)
+        fmap(exp, list)
+    }
+    x is list && x.value[0] == symbol("lambda") -> {
+        val (_, params, body) = x.value
+        lam(params, body, env)
+    }
+    x is list && x.value[0] == symbol("quote") -> {
+        val (_, exp) = x.value
+        exp
+    }
+    x is list && x.value[0] == symbol("unless") -> {
+        val (_, test: exp, conseq) = x.value
+        if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
+    }
+    x is list && x.value[0] == symbol("when") -> {
+        val (_, test: exp, conseq) = x.value
+        if ((eval(test, env) as bool).value) eval(conseq, env) else unit
+    }
+    x is list && x.value[0] == symbol("if") -> {
+        val (_, test: exp, conseq, alt) = x.value
+        val exp = if ((eval(test, env) as bool).value) conseq else alt
+        eval(exp, env)
+    }
+    x is list && (x.value[0] == symbol("def") || x.value[0] == symbol("define")) -> {
+        val (_, s: exp, e) = x.value
+        env[s as symbol] = eval(e, env)
+        env[s] as exp
+    }
+    x is coll && x[0] !is symbol -> x
+    x is map -> x
+    else -> {
+        x as list
+        val exp = x.value[0]
+        val proc = eval(exp, env)
+        val args = x.value.drop(1).map { eval(it, env) }
+        try {
+            val res = (proc as func).func(args)
+            env[symbol("$")] = res
+            res
+        } catch (t: Throwable) {
+            throw t.cause ?: t
         }
     }
 }

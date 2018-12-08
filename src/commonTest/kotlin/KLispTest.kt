@@ -5,5 +5,6 @@ import kotlin.test.Test
 class Tests {
     @Test
     fun testHello() {
+        println("a")
     }
 }

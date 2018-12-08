@@ -96,8 +96,17 @@ fun isa(t: type, args: exps): exp {
                     type.float -> value as float
                     type.double -> value as double
                     type.char -> value as char
-                    type.string -> value as symbol
+                    type.string -> value as string
                     type.bool -> value as bool
+                    type.keyword -> value as keyword
+                    type.list -> value as list
+                    type.set -> value as set
+                    type.map -> value as map
+                    type.coll -> value as coll
+                    type.number -> value as number<*>
+                    type.integer -> value as integer<*>
+                    type.decimal -> value as decimal<*>
+                    type.symbol -> value as symbol
                 }
                 true
             } catch (_: Throwable) {
@@ -118,7 +127,7 @@ fun eq(args: exps): exp {
     return bool(f == s)
 }
 
-fun range(args: exps): list {
+fun range(args: exps): coll {
     require(args.size == 2) { "range requires 2 arguments, got ${args.size}" }
     require(args.all { it is integer<*> }) { "range requires 2 integer arguments" }
     val (f, l) = args
@@ -135,24 +144,27 @@ fun lam(argNames: exp, body: exp, env: env): exp {
     require(body is list) { "body should be a list" }
     val _argNames = argNames.value.map { it as symbol }
     return func { argVals ->
-        val localEnv = _argNames.zip(argVals).toMap()
-        val map = env.toMap() + localEnv
-        eval(body, map.toMutableMap())
+        val map = ChainMap(env)
+        map.putAll(_argNames.zip(argVals))
+        eval(body, map)
     }
 }
 
 @Suppress("USELESS_CAST") // needed for native target
-fun map(exp: exp, col: exp): exp {
-    require(col is list) { "second argument should be a list" }
-    col as list
-    return when (val e = eval(exp)) {
+fun fmap(exp: exp, list: exp): exp {
+    require(list is coll) { "second argument should be a collection" }
+    list as coll
+    return when (exp) {
         is func -> {
-            val f = (eval(exp) as func).func
-            list(col.value.map { f(listOf(it)) })
+            val f = exp.func
+            list(list.value.map { f(listOf(it)) })
         }
-        is atom -> {
-            list(col.value.map { exp })
-        }
-        else -> throw IllegalArgumentException("can't handle exp <$e>")
+        is atom -> list(list.value.map { exp })
     }
 }
+
+fun set(it: List<exp>): exp = when {
+    it.first() is list -> set((it.first() as list).value.toSet())
+    else -> set(it.toSet())
+}
+
