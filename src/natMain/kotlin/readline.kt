@@ -12,7 +12,7 @@ import platform.posix.getenv
 
 actual fun getHistoryFileName(): String {
     val home = getenv("HOME")?.toKString() ?: throw IllegalStateException("failed to determine user home")
-    return "$home/.kl_history"
+    return "$home/$HISTORY_FILE_NAME"
 }
 
 actual fun loadHistory(fname: String): Boolean {
@@ -36,3 +36,5 @@ actual fun readLine(prompt: String): String? =
 actual fun exit(c: Int) = platform.posix.exit(c)
 
 actual fun getTimeNanos(): Long = kotlin.system.getTimeNanos()
+
+actual fun version(): String = "nat"

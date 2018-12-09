@@ -5,6 +5,8 @@ package klisp
 typealias env = MutableMap<symbol, exp>
 typealias exps = List<exp>
 
+data class ExitException(val msg: String) : Throwable(msg)
+
 enum class compareOp { lte, lt, gte, gt, eq }
 enum class type {
     byte,
@@ -51,7 +53,7 @@ object unit : atom() {
     override fun toString(): String = ":unit"
 }
 
-data class _list(val value: List<exp>): exp()
+data class _list(val value: List<exp>) : exp()
 
 sealed class number<T : Number>(open val value: T) : atom() {
     open val asDouble: Double by lazy { value.toDouble() }

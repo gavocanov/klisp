@@ -1,3 +1,12 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+
 plugins {
     id 'kotlin-multiplatform' version '1.3.10'
 }
@@ -26,7 +35,6 @@ kotlin {
         commonMain {
             dependencies {
                 implementation 'org.jetbrains.kotlin:kotlin-stdlib-common'
-                implementation 'org.jetbrains.kotlin:kotlin-reflect'
             }
         }
 
@@ -40,15 +48,41 @@ kotlin {
         jvmMain {
             dependencies {
                 implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+                implementation 'org.jetbrains.kotlin:kotlin-reflect'
+                implementation 'org.jline:jline:3.9.0'
             }
         }
-        
+
         jvmTest {
             dependencies {
                 implementation 'org.jetbrains.kotlin:kotlin-test'
                 implementation 'org.jetbrains.kotlin:kotlin-test-junit'
             }
         }
+
+        all {
+            languageSettings {
+                progressiveMode = true
+            }
+        }
     }
 }
 
+task runJar(type: JavaExec) {
+//    dependsOn assemble
+    dependsOn jvmJar
+    main = 'klisp.KlispKt'
+    classpath = files(kotlin.targets.jvm.compilations.main.output) + kotlin.targets.jvm.compilations.main.runtimeDependencyFiles
+}
+
+task uberJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    manifest {
+        attributes "Main-Class": 'klisp.KlispKt'
+    }
+
+    def target = kotlin.targets.jvm
+    from target.compilations.main.output
+    def runtimeClasspath = target.compilations.main.runtimeDependencyFiles
+    configurations = [runtimeClasspath]
+    println "task uber jar"
+}

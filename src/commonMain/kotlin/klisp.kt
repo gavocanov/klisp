@@ -2,6 +2,7 @@ package klisp
 
 var PROFILE = false
 var DEBUG = false
+const val HISTORY_FILE_NAME = ".kl_history"
 
 fun tokenize(s: String): List<String> {
     val p = s
@@ -13,7 +14,7 @@ fun tokenize(s: String): List<String> {
 }
 
 // split by space not contained in "", '', [] and {}
-private fun split(s: String): List<String> =
+fun split(s: String): List<String> =
         "[^\\s\"'{\\[]+|\"([^\"]*)\"|'([^']*)'|\\{([^{]*)}|\\[([^\\[]*)]"
                 .toRegex()
                 .findAll(s)
@@ -188,11 +189,19 @@ fun eval(x: exp, env: env = stdEnv): exp = when {
 }
 
 fun main(args: Array<String>) {
+    println("**klisp ${version()}**")
+
     val historyFileName = getHistoryFileName()
     val historyLoaded = loadHistory(historyFileName)
 
     while (true) {
-        val line = readLine("kl -> ") ?: return exit(0)
+        val line = try {
+            readLine("kl -> ")
+        } catch (t: Throwable) {
+            println(t.message ?: t::class.simpleName)
+            exit(0)
+            ""
+        } as String
         val res = try {
             val r = profile { eval(parse(line)) }
             saveToHistory(line, historyFileName, historyLoaded)
