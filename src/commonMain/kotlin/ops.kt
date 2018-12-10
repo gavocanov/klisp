@@ -1,7 +1,7 @@
 package klisp
 
 fun begin(args: exps): exp {
-    require(args.size > 1) { "begin should have at least 1 argument" }
+//    require(args.size > 1) { "begin should have at least 1 argument" }
     return args.last()
 }
 

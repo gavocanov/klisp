@@ -32,7 +32,7 @@ val HISTORY = DefaultHistory()
 val READER: LineReader = LineReaderBuilder.builder()
         .variable(LineReader.HISTORY_FILE, getHistoryFileName())
         .history(HISTORY)
-        .highlighter { _, buffer ->
+/*        .highlighter { _, buffer ->
             val l = tokenize(buffer)
             l.fold(AttributedStringBuilder()) { builder, t ->
                 val s = stdEnv[symbol(t)]
@@ -52,7 +52,7 @@ val READER: LineReader = LineReaderBuilder.builder()
                     }
                 }
             }.toAttributedString()
-        }
+        }*/
         .build()
 
 private val WHITE: AttributedStyle = AttributedStyle().foreground(AttributedStyle.WHITE)

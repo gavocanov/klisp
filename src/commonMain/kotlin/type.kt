@@ -8,6 +8,38 @@ typealias exps = List<exp>
 data class ExitException(val msg: String) : Throwable(msg)
 
 enum class compareOp { lte, lt, gte, gt, eq }
+enum class mathOp { plus, minus, div, mul }
+enum class specialForm(val aliases: List<String>? = null) {
+    // symbols
+    DEBUG,
+    PROFILE,
+    ENV(listOf("ls")),
+    // expressions
+    DEF(listOf("define")),
+    LAMBDA(listOf("lam")),
+    IF,
+    UNLESS,
+    WHEN,
+    MAP,
+    QUOTE;
+
+    companion object {
+        private val aliases = values().mapNotNull { it.aliases }.flatten()
+        private val values = specialForm.values().map { it.name.toLowerCase() }
+        fun isSpecial(s: String): Boolean = (values + aliases).any { it == s }
+        fun isSpecial(s: symbol): Boolean = isSpecial(s.value)
+        fun fromString(s: String): specialForm {
+            for (v in values()) {
+                if (v.aliases?.contains(s) == true)
+                    return v
+            }
+            return specialForm.valueOf(s.toUpperCase())
+        }
+
+        fun fromSymbol(s: symbol): specialForm = specialForm.fromString(s.value)
+    }
+}
+
 enum class type {
     byte,
     short,
@@ -29,8 +61,6 @@ enum class type {
     symbol
 }
 
-enum class mathOp { plus, minus, div, mul }
-
 sealed class exp {
     override fun toString(): String {
         val s = super.toString()
@@ -43,6 +73,10 @@ sealed class atom : exp() {
         val s = super.toString()
         return ":atom $s"
     }
+}
+
+data class err(val msg: String?) : atom() {
+    override fun toString(): String = ":error\n${msg ?: "unknown error"}"
 }
 
 object nil : atom() {

@@ -51,6 +51,7 @@ val stdEnv: MutableMap<symbol, exp> = mutableMapOf(
         symbol("decimal?") to func { it: List<exp> -> isa(type.decimal, it) },
         symbol("symbol?") to func { it: List<exp> -> isa(type.symbol, it) },
         symbol("is?") to func(::_is),
-        symbol("eq?") to func(::eq)
+        symbol("eq?") to func(::eq),
+        symbol("equal?") to func(::eq)
 )
 

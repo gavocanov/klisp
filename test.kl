@@ -8,8 +8,6 @@ false
 
 pi
 
-pi
-
 (def circle-area (lambda (r) (* pi (* r r))))
 
 (circle-area 3)
@@ -52,4 +50,7 @@ pi
 
 ; (pow 2 16)
 
-
+(begin
+    (def a 1)
+    (def b 2)
+    (+ a b))

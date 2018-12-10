@@ -4,13 +4,14 @@ var PROFILE = false
 var DEBUG = false
 const val HISTORY_FILE_NAME = ".kl_history"
 
-fun tokenize(s: String): List<String> {
-    val p = s
+fun tokenize(s: String, dump: Boolean = false): List<String> {
+    val parsed = s
             .replace("\n", "")
             .replace("(", " ( ")
             .replace(")", " ) ")
-    return split(p)
-            .also { if (DEBUG) println("parsed as: $it") }
+    val tokens = split(parsed)
+    if (dump) println("parsed as: $tokens")
+    return tokens
 }
 
 // split by space not contained in "", '', [] and {}
@@ -22,7 +23,7 @@ fun split(s: String): List<String> =
                 .toList()
 
 fun parse(s: String): exp =
-        readFromTokens(tokenize(s).toMutableList())
+        readFromTokens(tokenize(s, DEBUG).toMutableList())
 
 fun readFromTokens(tokens: MutableList<String>): exp {
     if (tokens.isEmpty()) throw IllegalArgumentException("tokens list is empty")
@@ -30,13 +31,17 @@ fun readFromTokens(tokens: MutableList<String>): exp {
     tokens.removeAt(0)
     return when (token) {
         "(" -> {
-            val l = mutableListOf<exp>()
-            while (tokens[0] != ")")
-                l.add(readFromTokens(tokens))
-            tokens.removeAt(0)
-            _list(l)
+            val list = mutableListOf<exp>()
+            try {
+                while (tokens[0] != ")")
+                    list.add(readFromTokens(tokens))
+                tokens.removeAt(0)
+            } catch (t: Throwable) {
+                throw IllegalArgumentException("parsing failed")
+            }
+            _list(list)
         }
-        ")" -> throw IllegalStateException("unexpected )")
+        ")" -> throw IllegalArgumentException("unexpected )")
         else -> parseAtom(token)
     }
 }
@@ -49,9 +54,9 @@ fun parseAtom(s: String): atom = when {
             split(s.substringAfter("[").substringBeforeLast("]")).map(::parseAtom)
     )
     s.startsWith('{') && s.endsWith('}') -> {
-        val l = split(s.substringAfter("{").substringBeforeLast("}"))
-        val keys = l.filter { it.startsWith(':') }
-        val vals = (l - keys)
+        val list = split(s.substringAfter("{").substringBeforeLast("}"))
+        val keys = list.filter { it.startsWith(':') }
+        val vals = (list - keys)
         map(keys.zip(vals).map { (k, v) ->
             keyword(k) to parseAtom(v)
         }.toMap())
@@ -91,30 +96,23 @@ fun parseAtom(s: String): atom = when {
     }
 }
 
-fun profile(fn: () -> Any): Any =
-        if (!PROFILE) fn()
-        else {
-            val s = getTimeNanos()
-            val r = fn()
-            val e = getTimeNanos()
-            println(":*took* ${((e - s) / 1e6)} ms")
-            r
-        }
-
 fun eval(x: exp, env: env = stdEnv): exp = when {
-    x is symbol && x.value == "debug" -> {
-        DEBUG = !DEBUG
-        bool(DEBUG)
-    }
-    x is symbol && x.value == "profile" -> {
-        PROFILE = !PROFILE
-        bool(PROFILE)
-    }
-    x is symbol && (x.value == "env" || x.value == "ls") -> {
-        env.forEach { (k, v) ->
-            println("$k -> $v")
+    x is symbol && specialForm.isSpecial(x.value) -> {
+        when (specialForm.fromString(x.value)) {
+            specialForm.DEBUG -> {
+                DEBUG = !DEBUG
+                bool(DEBUG)
+            }
+            specialForm.PROFILE -> {
+                PROFILE = !PROFILE
+                bool(PROFILE)
+            }
+            specialForm.ENV -> {
+                env.forEach { (k, v) -> println("$k -> $v") }
+                unit
+            }
+            else -> throw IllegalArgumentException("unknown symbol <${x.value}>")
         }
-        unit
     }
     x is symbol -> try {
         env[x] as exp
@@ -135,37 +133,42 @@ fun eval(x: exp, env: env = stdEnv): exp = when {
         }
         m[k as keyword] ?: unit
     }
-    x is _list && x.value[0] == symbol("map") -> {
-        val (_, _exp, _list) = x.value
-        val list = eval(_list) as coll
-        val exp = eval(_exp)
-        fmap(exp, list)
-    }
-    x is _list && x.value[0] == symbol("lambda") -> {
-        val (_, params, body) = x.value
-        lam(params, body, env)
-    }
-    x is _list && x.value[0] == symbol("quote") -> {
-        val (_, exp) = x.value
-        exp
-    }
-    x is _list && x.value[0] == symbol("unless") -> {
-        val (_, test: exp, conseq) = x.value
-        if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
-    }
-    x is _list && x.value[0] == symbol("when") -> {
-        val (_, test: exp, conseq) = x.value
-        if ((eval(test, env) as bool).value) eval(conseq, env) else unit
-    }
-    x is _list && x.value[0] == symbol("if") -> {
-        val (_, test: exp, conseq, alt) = x.value
-        val exp = if ((eval(test, env) as bool).value) conseq else alt
-        eval(exp, env)
-    }
-    x is _list && (x.value[0] == symbol("def") || x.value[0] == symbol("define")) -> {
-        val (_, s: exp, e) = x.value
-        env[s as symbol] = eval(e, env)
-        env[s] as exp
+    x is _list && specialForm.isSpecial(x.value[0] as symbol) -> {
+        when (specialForm.fromSymbol(x.value[0] as symbol)) {
+            specialForm.DEF -> {
+                val (_, s: exp, e) = x.value
+                env[s as symbol] = eval(e, env)
+                env[s] as exp
+            }
+            specialForm.IF -> {
+                val (_, test: exp, conseq, alt) = x.value
+                val exp = if ((eval(test, env) as bool).value) conseq else alt
+                eval(exp, env)
+            }
+            specialForm.UNLESS -> {
+                val (_, test: exp, conseq) = x.value
+                if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
+            }
+            specialForm.WHEN -> {
+                val (_, test: exp, conseq) = x.value
+                if ((eval(test, env) as bool).value) eval(conseq, env) else unit
+            }
+            specialForm.MAP -> {
+                val (_, _exp, _list) = x.value
+                val list = eval(_list) as coll
+                val exp = eval(_exp)
+                fmap(exp, list)
+            }
+            specialForm.LAMBDA -> {
+                val (_, params, body) = x.value
+                lam(params, body, env)
+            }
+            specialForm.QUOTE -> {
+                val (_, exp) = x.value
+                exp
+            }
+            else -> throw IllegalArgumentException("unknown symbol <${x.value[0]}> in expression <$x>")
+        }
     }
     x is coll -> x
     x is map -> x
@@ -197,18 +200,23 @@ fun main(args: Array<String>) {
     while (true) {
         val line = try {
             readLine("kl -> ")
+        } catch (exit: ExitException) {
+            println("bye!!")
+            null
         } catch (t: Throwable) {
             println(t.message ?: t::class.simpleName)
-            exit(0)
-            ""
-        } as String
-        val res = try {
-            val r = profile { eval(parse(line)) }
-            saveToHistory(line, historyFileName, historyLoaded)
-            r
-        } catch (t: Throwable) {
-            t.message ?: t
+            null
         }
-        println(res)
+
+        if (line !== null) {
+            val res = try {
+                val r = eval(parse(line))
+                saveToHistory(line, historyFileName, historyLoaded)
+                r
+            } catch (t: Throwable) {
+                err(t.message ?: t::class.simpleName)
+            }
+            println(res)
+        } else exit(0)
     }
 }

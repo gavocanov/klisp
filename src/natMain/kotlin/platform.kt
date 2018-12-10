@@ -6,6 +6,7 @@ import linenoise.linenoiseHistoryAdd
 import linenoise.linenoiseHistoryLoad
 import linenoise.linenoiseHistorySave
 import linenoise.linenoiseHistorySetMaxLen
+import linenoise.linenoiseSetMultiLine
 import platform.posix.fclose
 import platform.posix.fopen
 import platform.posix.getenv
@@ -19,6 +20,7 @@ actual fun loadHistory(fname: String): Boolean {
     val file = fopen(fname, "a+")
     fclose(file)
     linenoiseHistorySetMaxLen(64_000)
+    linenoiseSetMultiLine(1)
     val loaded = linenoiseHistoryLoad(fname) == 0
     if (!loaded)
         println("failed to load history file $fname")

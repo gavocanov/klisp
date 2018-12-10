@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id 'kotlin-multiplatform' version '1.3.10'
+    id 'kotlin-multiplatform' version '1.3.11'
 }
 
 repositories {
@@ -84,5 +84,4 @@ task uberJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
     from target.compilations.main.output
     def runtimeClasspath = target.compilations.main.runtimeDependencyFiles
     configurations = [runtimeClasspath]
-    println "task uber jar"
 }
