@@ -96,99 +96,115 @@ fun parseAtom(s: String): atom = when {
     }
 }
 
-fun eval(x: exp, env: env = stdEnv): exp = when {
-    x is symbol && specialForm.isSpecial(x.value) -> {
-        when (specialForm.fromString(x.value)) {
-            specialForm.DEBUG -> {
-                DEBUG = !DEBUG
-                bool(DEBUG)
+fun eval(x: exp, env: env = stdEnv): exp {
+    if (DEBUG) println(":eval <$x>")
+    val _res = when {
+        x is symbol && specialForm.isSpecial(x.value) -> {
+            when (specialForm.fromString(x.value)) {
+                specialForm.DEBUG -> {
+                    DEBUG = !DEBUG
+                    bool(DEBUG)
+                }
+                specialForm.PROFILE -> {
+                    PROFILE = !PROFILE
+                    bool(PROFILE)
+                }
+                specialForm.ENV -> {
+                    env.forEach { (k, v) -> println("$k -> $v") }
+                    unit
+                }
+                else -> throw IllegalArgumentException("unknown symbol <$x>")
             }
-            specialForm.PROFILE -> {
-                PROFILE = !PROFILE
-                bool(PROFILE)
-            }
-            specialForm.ENV -> {
-                env.forEach { (k, v) -> println("$k -> $v") }
-                unit
-            }
-            else -> throw IllegalArgumentException("unknown symbol <${x.value}>")
         }
-    }
-    x is symbol -> try {
-        env[x] as exp
-    } catch (_: Throwable) {
-        throw IllegalStateException("unknown symbol <${x.value}>")
-    }
-    x is keyword -> x
-    x is bool -> x
-    x is number<*> -> x
-    x is string -> x
-    x is char -> x
-    x is _list && x.value[0] is keyword -> {
-        val (k, v) = x.value
-        val m = try {
-            eval(v) as map
+        x is symbol -> try {
+            env[x] as exp
         } catch (_: Throwable) {
-            throw IllegalArgumentException("second arguments should eval to a map")
+            throw IllegalStateException("unknown symbol <$x>")
         }
-        m[k as keyword] ?: unit
+        x is keyword -> x
+        x is bool -> x
+        x is number<*> -> x
+        x is string -> x
+        x is char -> x
+        x is _list && x[0] is keyword -> {
+            val (k, v) = x
+            val m = try {
+                eval(v) as map
+            } catch (_: Throwable) {
+                throw IllegalArgumentException("second arguments should eval to a map")
+            }
+            m[k as keyword] ?: unit
+        }
+        x is _list && x[0] is symbol && specialForm.isSpecial(x[0] as symbol) -> {
+            when (specialForm.fromSymbol(x[0] as symbol)) {
+                specialForm.DEF -> {
+                    val (_, s: exp, e) = x
+                    env[s as symbol] = eval(e, env)
+                    env[s] as exp
+                }
+                specialForm.IF -> {
+                    val (_, test: exp, conseq, alt) = x
+                    val res = eval(test, env)
+                    val exp = when (res) {
+                        is bool -> res
+                        is collection -> bool(res.isNotEmpty())
+                        is number<*> -> bool(res.asDouble > 0.0)
+                        is map -> bool(res.isNotEmpty())
+                        is string -> bool(res.value.isNotEmpty())
+                        else -> bool(true)
+                    }
+                    val conRes = if (exp.value) conseq else alt
+                    eval(conRes, env)
+                }
+                specialForm.UNLESS -> {
+                    val (_, test: exp, conseq) = x
+                    if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
+                }
+                specialForm.WHEN -> {
+                    val (_, test: exp, conseq) = x
+                    if ((eval(test, env) as bool).value) eval(conseq, env) else unit
+                }
+                specialForm.MAP -> {
+                    val (_, _exp, _list) = x
+                    val list = eval(_list) as collection
+                    val exp = eval(_exp)
+                    fmap(exp, list)
+                }
+                specialForm.LAMBDA -> {
+                    val (_, params, body) = x
+                    lam(params, body, env)
+                }
+                specialForm.QUOTE -> {
+                    val (_, exp) = x
+                    when (exp) {
+                        is _list -> list(exp.toList())
+                        else -> exp
+                    }
+                }
+                else -> throw IllegalArgumentException("unknown symbol <${x[0]}> in expression <$x>")
+            }
+        }
+        x is collection -> x
+        x is map -> x
+        else -> {
+            x as _list
+            val exp = x[0]
+            val proc = try {
+                eval(exp, env) as func
+            } catch (_: Throwable) {
+                throw IllegalArgumentException("first argument should be a function")
+            }
+            val args = x.drop(1).map { eval(it, env) }
+            try {
+                val res = proc(args)
+                if (res is _list) throw IllegalStateException("res is a _list, that's a bug")
+                res
+            } catch (t: Throwable) {
+                throw t.cause ?: t
+            }
+        }
     }
-    x is _list && specialForm.isSpecial(x.value[0] as symbol) -> {
-        when (specialForm.fromSymbol(x.value[0] as symbol)) {
-            specialForm.DEF -> {
-                val (_, s: exp, e) = x.value
-                env[s as symbol] = eval(e, env)
-                env[s] as exp
-            }
-            specialForm.IF -> {
-                val (_, test: exp, conseq, alt) = x.value
-                val exp = if ((eval(test, env) as bool).value) conseq else alt
-                eval(exp, env)
-            }
-            specialForm.UNLESS -> {
-                val (_, test: exp, conseq) = x.value
-                if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
-            }
-            specialForm.WHEN -> {
-                val (_, test: exp, conseq) = x.value
-                if ((eval(test, env) as bool).value) eval(conseq, env) else unit
-            }
-            specialForm.MAP -> {
-                val (_, _exp, _list) = x.value
-                val list = eval(_list) as coll
-                val exp = eval(_exp)
-                fmap(exp, list)
-            }
-            specialForm.LAMBDA -> {
-                val (_, params, body) = x.value
-                lam(params, body, env)
-            }
-            specialForm.QUOTE -> {
-                val (_, exp) = x.value
-                exp
-            }
-            else -> throw IllegalArgumentException("unknown symbol <${x.value[0]}> in expression <$x>")
-        }
-    }
-    x is coll -> x
-    x is map -> x
-    else -> {
-        x as _list
-        val exp = x.value[0]
-        val proc = try {
-            eval(exp, env) as func
-        } catch (_: Throwable) {
-            throw IllegalArgumentException("first argument should be a function")
-        }
-        val args = x.value.drop(1).map { eval(it, env) }
-        try {
-            val res = proc.func(args)
-            env[symbol("$")] = res
-            res
-        } catch (t: Throwable) {
-            throw t.cause ?: t
-        }
-    }
+    return _res
 }
 
 fun main(args: Array<String>) {
@@ -209,6 +225,7 @@ fun main(args: Array<String>) {
         }
 
         if (line !== null) {
+            val _start = if (PROFILE) getTimeNanos() else 0
             val res = try {
                 val r = eval(parse(line))
                 saveToHistory(line, historyFileName, historyLoaded)
@@ -217,6 +234,7 @@ fun main(args: Array<String>) {
                 err(t.message ?: t::class.simpleName)
             }
             println(res)
+            if (PROFILE) println(":took ${(getTimeNanos() - _start) / 1e6}ms")
         } else exit(0)
     }
 }

@@ -4,11 +4,14 @@ package klisp
 
 typealias env = MutableMap<symbol, exp>
 typealias exps = List<exp>
+typealias kmap = Map<keyword, exp>
 
 data class ExitException(val msg: String) : Throwable(msg)
 
 enum class compareOp { lte, lt, gte, gt, eq }
+
 enum class mathOp { plus, minus, div, mul }
+
 enum class specialForm(val aliases: List<String>? = null) {
     // symbols
     DEBUG,
@@ -54,42 +57,28 @@ enum class type {
     list,
     set,
     map,
-    coll,
+    collection,
     number,
     integer,
     decimal,
-    symbol
+    symbol,
+    atom
 }
 
-sealed class exp {
-    override fun toString(): String {
-        val s = super.toString()
-        return ":exp $s"
-    }
-}
+interface exp
+interface atom : exp
 
-sealed class atom : exp() {
-    override fun toString(): String {
-        val s = super.toString()
-        return ":atom $s"
-    }
-}
-
-data class err(val msg: String?) : atom() {
+data class err(val msg: String?) : atom {
     override fun toString(): String = ":error\n${msg ?: "unknown error"}"
 }
 
-object nil : atom() {
-    override fun toString(): String = ":nil"
-}
-
-object unit : atom() {
+object unit : atom {
     override fun toString(): String = ":unit"
 }
 
-data class _list(val value: List<exp>) : exp()
+data class _list(private val value: exps) : exp, exps by value
 
-sealed class number<T : Number>(open val value: T) : atom() {
+sealed class number<T : Number>(open val value: T) : atom {
     open val asDouble: Double by lazy { value.toDouble() }
     override fun toString(): String = ":number(${value::class.simpleName}) $value"
 }
@@ -104,44 +93,55 @@ sealed class decimal<T : Number>(override val value: T) : number<T>(value) {
     override fun toString(): String = ":decimal(${value::class.simpleName}) $value"
 }
 
-sealed class coll(open val value: Collection<exp>) : atom() {
-    override fun toString(): String = ":coll(${value::class.simpleName}) $value"
-    operator fun get(i: Int): exp = value.toList()[i]
+sealed class collection(protected open val value: Collection<exp>) : atom, Collection<exp> by value {
+    override fun toString(): String = ":collection(${value::class.simpleName}) $value"
 }
 
-data class keyword(val value: String) : atom() {
-    override fun toString(): String = ":keyword ${value.drop(1)}"
+data class keyword(val value: String) : atom {
+    override fun toString(): String = ":keyword ${value.substring(1)}"
 }
 
-data class list(override val value: List<exp>) : coll(value) {
+data class list(override val value: exps) : collection(value), exps by value {
+    override val size: Int = value.size
+    override fun contains(element: exp): Boolean = value.contains(element)
+    override fun containsAll(elements: Collection<exp>): Boolean = value.containsAll(elements)
+    override fun isEmpty(): Boolean = value.isEmpty()
+    override fun iterator(): Iterator<exp> = value.iterator()
     override fun toString(): String = ":list $value"
+    override operator fun get(index: Int): exp = value[index]
 }
 
-data class set(override val value: Set<exp>) : coll(value) {
+data class set(override val value: Set<exp>) : collection(value), Set<exp> by value {
+    override val size: Int = value.size
+    override fun contains(element: exp): Boolean = value.contains(element)
+    override fun containsAll(elements: Collection<exp>): Boolean = value.containsAll(elements)
+    override fun isEmpty(): Boolean = value.isEmpty()
+    override fun iterator(): Iterator<exp> = value.iterator()
     override fun toString(): String = ":set $value"
+    operator fun get(index: Int): exp = value.toList()[index]
 }
 
-data class map(val value: Map<keyword, exp>) : atom(), Map<keyword, exp> by value {
+data class map(private val value: kmap) : atom, kmap by value {
     override fun toString(): String = ":map ${value.map { (k, v) -> "$k -> $v" }}"
 }
 
-data class func(val func: (List<exp>) -> exp) : exp() {
+data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func {
     override fun toString(): String = ":func"
 }
 
-data class char(val value: Char) : atom() {
+data class char(val value: Char) : atom {
     override fun toString(): String = ":char $value"
 }
 
-data class string(val value: String) : atom() {
+data class string(val value: String) : atom {
     override fun toString(): String = ":string $value"
 }
 
-data class symbol(val value: String) : atom() {
+data class symbol(val value: String) : atom {
     override fun toString(): String = ":symbol $value"
 }
 
-data class bool(val value: Boolean) : atom() {
+data class bool(val value: Boolean) : atom {
     override fun toString(): String = ":bool $value"
 }
 
