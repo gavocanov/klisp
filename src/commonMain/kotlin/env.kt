@@ -13,10 +13,10 @@ val stdEnv: env = mutableMapOf(
         symbol("pi") to double(PI),
         symbol("true") to bool(true),
         symbol("false") to bool(false),
-        symbol("begin") to func(::begin),
-        symbol("range") to func(::range),
-        symbol("list") to func(::list),
-        symbol("set") to func(::set),
+        symbol("begin") to func { begin(it) },
+        symbol("range") to func { range(it) },
+        symbol("list") to func { list(it) },
+        symbol("set") to func { set(it) },
         symbol("head") to func { it -> (it.first() as list).first() },
         symbol("first") to func { it -> (it.first() as list).first() },
         symbol("last") to func { it -> (it.first() as list).last() },
@@ -51,8 +51,8 @@ val stdEnv: env = mutableMapOf(
         symbol("decimal?") to func { it: exps -> isa(type.decimal, it) },
         symbol("symbol?") to func { it: exps -> isa(type.symbol, it) },
         symbol("atom?") to func { it: exps -> isa(type.atom, it) },
-        symbol("is?") to func(::_is),
-        symbol("eq?") to func(::eq),
-        symbol("equal?") to func(::eq)
-)
+        symbol("is?") to func { _is(it) },
+        symbol("eq?") to func { eq(it) },
+        symbol("equal?") to func { eq(it) }
+).also { it.map { (k, v) -> v.meta = k } }
 

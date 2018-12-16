@@ -21,3 +21,6 @@ class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     override fun putAll(from: Map<out K, V>) = innerMap.putAll(from)
     override fun remove(key: K): V? = innerMap.remove(key)
 }
+
+fun took(_start: Long) = "took ${strFormat(((getTimeNanos() - _start) / 1e6))} ms"
+

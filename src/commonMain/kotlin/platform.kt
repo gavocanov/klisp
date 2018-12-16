@@ -7,3 +7,4 @@ expect fun readLine(prompt: String): String?
 expect fun exit(c: Int)
 expect fun getTimeNanos(): Long
 expect fun version(): String
+expect fun strFormat(d: Double): String

@@ -6,6 +6,7 @@ const val HISTORY_FILE_NAME = ".kl_history"
 
 fun tokenize(s: String, dump: Boolean = false): List<String> {
     val parsed = s
+            .replace(Regex(";(.*)"), "")
             .replace("\n", "")
             .replace("(", " ( ")
             .replace(")", " ) ")
@@ -26,7 +27,7 @@ fun parse(s: String): exp =
         readFromTokens(tokenize(s, DEBUG).toMutableList())
 
 fun readFromTokens(tokens: MutableList<String>): exp {
-    if (tokens.isEmpty()) throw IllegalArgumentException("tokens list is empty")
+    if (tokens.isEmpty()) return unit
     val token = tokens.first()
     tokens.removeAt(0)
     return when (token) {
@@ -98,7 +99,8 @@ fun parseAtom(s: String): atom = when {
 
 fun eval(x: exp, env: env = stdEnv): exp {
     if (DEBUG) println(":eval <$x>")
-    val _res = when {
+    return when {
+        x is unit -> x
         x is symbol && specialForm.isSpecial(x.value) -> {
             when (specialForm.fromString(x.value)) {
                 specialForm.DEBUG -> {
@@ -194,6 +196,9 @@ fun eval(x: exp, env: env = stdEnv): exp {
             } catch (_: Throwable) {
                 throw IllegalArgumentException("first argument should be a function")
             }
+
+            if (PROFILE && DEBUG) proc.meta = x
+
             val args = x.drop(1).map { eval(it, env) }
             try {
                 val res = proc(args)
@@ -204,7 +209,6 @@ fun eval(x: exp, env: env = stdEnv): exp {
             }
         }
     }
-    return _res
 }
 
 fun main(args: Array<String>) {
@@ -225,16 +229,16 @@ fun main(args: Array<String>) {
         }
 
         if (line !== null) {
-            val _start = if (PROFILE) getTimeNanos() else 0
             val res = try {
+                val _start = if (PROFILE) getTimeNanos() else 0
                 val r = eval(parse(line))
+                if (PROFILE) println(":eval/parse ${took(_start)}")
                 saveToHistory(line, historyFileName, historyLoaded)
                 r
             } catch (t: Throwable) {
                 err(t.message ?: t::class.simpleName)
             }
             println(res)
-            if (PROFILE) println(":took ${(getTimeNanos() - _start) / 1e6}ms")
         } else exit(0)
     }
 }

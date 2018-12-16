@@ -1,7 +1,6 @@
 package klisp
 
 fun begin(args: exps): exp {
-//    require(args.size > 1) { "begin should have at least 1 argument" }
     return args.last()
 }
 
@@ -40,6 +39,14 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                 mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as long).value })
             }
         }
+        args.all { it is integer<*> } -> {
+            when (op) {
+                mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as integer<*>).asLong })
+                mathOp.minus -> long(args.drop(1).fold((args.first() as integer<*>).asLong) { a, n -> a - (n as integer<*>).asLong })
+                mathOp.div -> double(args.drop(1).fold((args.first() as integer<*>).asDouble) { a, n -> a / (n as integer<*>).asLong })
+                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as integer<*>).asLong })
+            }
+        }
         args.all { it is float } -> {
             when (op) {
                 mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as float).value })
@@ -64,13 +71,14 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as number<*>).asDouble })
             }
         }
-        args.all { it is string || it is number<*> } -> {
+        args.all { it is string || it is number<*> || it is bool } -> {
             when (op) {
                 mathOp.plus -> {
                     val s = args.joinToString("") { e ->
                         when (e) {
-                            is number<*> -> e.value.toString()
+                            is number<*> -> e.numericValue.toString()
                             is string -> e.value.replace("\"", "")
+                            is bool -> e.integerValue.toString()
                             else -> throw IllegalStateException("this should not be....")
                         }
                     }

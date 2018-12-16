@@ -1,12 +1,6 @@
 package klisp
 
 import kotlinx.cinterop.toKString
-import linenoise.linenoise
-import linenoise.linenoiseHistoryAdd
-import linenoise.linenoiseHistoryLoad
-import linenoise.linenoiseHistorySave
-import linenoise.linenoiseHistorySetMaxLen
-import linenoise.linenoiseSetMultiLine
 import platform.posix.fclose
 import platform.posix.fopen
 import platform.posix.getenv
@@ -31,6 +25,8 @@ actual fun saveToHistory(l: String, fname: String, save: Boolean) {
     linenoiseHistoryAdd(l)
     if (save) linenoiseHistorySave(fname)
 }
+
+actual fun strFormat(d: Double): String = d.toString()
 
 actual fun readLine(prompt: String): String? =
         linenoise(prompt)?.toKString()

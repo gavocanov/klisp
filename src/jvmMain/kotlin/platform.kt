@@ -5,9 +5,9 @@ import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
 import org.jline.reader.impl.history.DefaultHistory
-import org.jline.utils.AttributedStringBuilder
 import org.jline.utils.AttributedStyle
 import java.nio.file.Paths
+import java.text.NumberFormat
 
 actual fun getHistoryFileName(): String =
         Paths.get(System.getProperty("user.home"), HISTORY_FILE_NAME + "_jvm").toString()
@@ -25,6 +25,12 @@ actual fun saveToHistory(l: String, fname: String, save: Boolean) {
     HISTORY.add(l)
     if (save)
         HISTORY.save()
+}
+
+actual fun strFormat(d: Double): String {
+    val nf = NumberFormat.getInstance()
+    nf.maximumFractionDigits = 3
+    return nf.format(d)
 }
 
 val HISTORY = DefaultHistory()
