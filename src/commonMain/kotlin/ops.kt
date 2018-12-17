@@ -8,60 +8,12 @@ fun begin(args: exps): exp {
 fun foldableMathOp(op: mathOp, args: exps): exp {
     require(args.size >= 2) { "$op expects at least 2 arguments" }
     val res = when {
-        args.all { it is byte } -> {
-            when (op) {
-                mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as byte).value })
-                mathOp.minus -> long(args.drop(1).fold((args.first() as byte).value.toLong()) { a, n -> a - (n as byte).value })
-                mathOp.div -> double(args.drop(1).fold((args.first() as byte).value.toDouble()) { a, n -> a / (n as byte).value })
-                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as byte).value })
-            }
-        }
-        args.all { it is short } -> {
-            when (op) {
-                mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as short).value })
-                mathOp.minus -> long(args.drop(1).fold((args.first() as short).value.toLong()) { a, n -> a - (n as short).value })
-                mathOp.div -> double(args.drop(1).fold((args.first() as short).value.toDouble()) { a, n -> a / (n as short).value })
-                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as short).value })
-            }
-        }
-        args.all { it is int } -> {
-            when (op) {
-                mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as int).value })
-                mathOp.minus -> long(args.drop(1).fold((args.first() as int).value.toLong()) { a, n -> a - (n as int).value })
-                mathOp.div -> double(args.drop(1).fold((args.first() as int).value.toDouble()) { a, n -> a / (n as int).value })
-                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as int).value })
-            }
-        }
-        args.all { it is long } -> {
-            when (op) {
-                mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as long).value })
-                mathOp.minus -> long(args.drop(1).fold((args.first() as long).value) { a, n -> a - (n as long).value })
-                mathOp.div -> double(args.drop(1).fold((args.first() as long).value.toDouble()) { a, n -> a / (n as long).value })
-                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as long).value })
-            }
-        }
         args.all { it is integer<*> } -> {
             when (op) {
                 mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as integer<*>).asLong })
                 mathOp.minus -> long(args.drop(1).fold((args.first() as integer<*>).asLong) { a, n -> a - (n as integer<*>).asLong })
                 mathOp.div -> double(args.drop(1).fold((args.first() as integer<*>).asDouble) { a, n -> a / (n as integer<*>).asLong })
                 mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as integer<*>).asLong })
-            }
-        }
-        args.all { it is float } -> {
-            when (op) {
-                mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as float).value })
-                mathOp.minus -> double(args.drop(1).fold((args.first() as float).value.toDouble()) { a, n -> a - (n as float).value })
-                mathOp.div -> double(args.drop(1).fold((args.first() as float).value.toDouble()) { a, n -> a / (n as float).value })
-                mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as float).value })
-            }
-        }
-        args.all { it is double } -> {
-            when (op) {
-                mathOp.plus -> double(args.fold(0.0) { a, n -> a + (n as double).value })
-                mathOp.minus -> double(args.drop(1).fold((args.first() as double).value) { a, n -> a - (n as double).value })
-                mathOp.div -> double(args.drop(1).fold((args.first() as double).value) { a, n -> a / (n as double).value })
-                mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as double).value })
             }
         }
         args.all { it is number<*> } -> {
@@ -95,15 +47,8 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
     }
 
     return when (res) {
-        is byte -> if (res.value == Byte.MAX_VALUE || res.value == Byte.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is short -> if (res.value == Short.MAX_VALUE || res.value == Short.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is int -> if (res.value == Int.MAX_VALUE || res.value == Int.MIN_VALUE) throw IllegalStateException("under/overflow") else res
         is long -> if (res.value == Long.MAX_VALUE || res.value == Long.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is ubyte -> if (res.value == UByte.MAX_VALUE || res.value == UByte.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is ushort -> if (res.value == UShort.MAX_VALUE || res.value == UShort.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is uint -> if (res.value == UInt.MAX_VALUE || res.value == UInt.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is ulong -> if (res.value == ULong.MAX_VALUE || res.value == ULong.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is float -> if (res.value == Float.POSITIVE_INFINITY || res.value == Float.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow") else res
+//        is ulong -> if (res.value == ULong.MAX_VALUE || res.value == ULong.MIN_VALUE) throw IllegalStateException("under/overflow") else res
         is double -> if (res.value == Double.POSITIVE_INFINITY || res.value == Double.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow") else res
         is string -> res
         else -> throw IllegalStateException("result <$res> is unexpected for arguments <$args> and op <$op>")
