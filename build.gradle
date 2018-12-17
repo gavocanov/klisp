@@ -29,13 +29,20 @@ kotlin {
                 }
             }
         }
+
+        all {
+            compilations.all {
+                tasks[compileKotlinTaskName].kotlinOptions {
+                    freeCompilerArgs = ['-Xuse-experimental=kotlin.Experimental']
+                }
+            }
+        }
     }
 
     sourceSets {
         commonMain {
             dependencies {
                 implementation 'org.jetbrains.kotlin:kotlin-stdlib-common'
-                implementation 'com.github.ajalt:mordant:1.2.0'
             }
         }
 

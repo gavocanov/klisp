@@ -9,34 +9,10 @@ import org.jline.utils.AttributedStyle
 import java.nio.file.Paths
 import java.text.NumberFormat
 
-actual fun getHistoryFileName(): String =
-        Paths.get(System.getProperty("user.home"), HISTORY_FILE_NAME + "_jvm").toString()
-
-actual fun loadHistory(fname: String): Boolean = try {
-    HISTORY.load()
-    println("loaded history from $fname")
-    true
-} catch (t: Throwable) {
-    println("failed to load history from $fname: ${t.message ?: t::class.simpleName}")
-    false
-}
-
-actual fun saveToHistory(l: String, fname: String, save: Boolean) {
-    HISTORY.add(l)
-    if (save)
-        HISTORY.save()
-}
-
-actual fun strFormat(d: Double): String {
-    val nf = NumberFormat.getInstance()
-    nf.maximumFractionDigits = 3
-    return nf.format(d)
-}
-
 val HISTORY = DefaultHistory()
 
 val READER: LineReader = LineReaderBuilder.builder()
-        .variable(LineReader.HISTORY_FILE, getHistoryFileName())
+        .variable(LineReader.HISTORY_FILE, Platform.getHistoryFileName())
         .history(HISTORY)
 /*        .highlighter { _, buffer ->
             val l = tokenize(buffer)
@@ -64,17 +40,47 @@ val READER: LineReader = LineReaderBuilder.builder()
 private val WHITE: AttributedStyle = AttributedStyle().foreground(AttributedStyle.WHITE)
 private val BLUE: AttributedStyle = AttributedStyle().foreground(AttributedStyle.BLUE)
 
-actual fun readLine(prompt: String): String? = try {
-    READER.readLine(prompt)
-} catch (ui: UserInterruptException) {
-    throw ExitException("bye!!")
-} catch (eof: EndOfFileException) {
-    throw ExitException("bye!!")
-} catch (t: Throwable) {
-    throw t
-}
+actual object Platform {
+    actual fun getHistoryFileName(): String =
+            Paths.get(System.getProperty("user.home"), HISTORY_FILE_NAME + "_jvm").toString()
 
-actual fun version(): String = "jvm"
-actual fun exit(c: Int) = System.exit(c)
-actual fun getTimeNanos(): Long = System.nanoTime()
+    actual fun loadHistory(fname: String): Boolean = try {
+        HISTORY.load()
+        LOGGER.info("loaded history from $fname")
+        true
+    } catch (t: Throwable) {
+        LOGGER.warn("failed to load history from $fname: ${t.message ?: t::class.simpleName}")
+        false
+    }
+
+    actual fun saveToHistory(l: String, fname: String, save: Boolean) {
+        HISTORY.add(l)
+        if (save)
+            HISTORY.save()
+    }
+
+    actual fun strFormat(d: Double): String {
+        val nf = NumberFormat.getInstance()
+        nf.maximumFractionDigits = 3
+        return nf.format(d)
+    }
+
+    actual fun readLine(prompt: String): String? = try {
+        READER.readLine(prompt)
+    } catch (ui: UserInterruptException) {
+        throw ExitException("bye!!")
+    } catch (eof: EndOfFileException) {
+        throw ExitException("bye!!")
+    } catch (t: Throwable) {
+        throw t
+    }
+
+    actual fun version(): String = "jvm"
+    actual fun exit(c: Int) = System.exit(c)
+    actual fun getTimeNanos(): Long = System.nanoTime()
+
+    actual fun getenv(s: String): String? = System.getenv(s)
+    actual fun getProperty(s: String): String? = System.getProperty(s)
+    actual fun console(): Boolean = System.console() !== null
+}
 

@@ -1,5 +1,7 @@
 package klisp
 
+import klisp.tty.TermColors
+
 class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     private val innerMap = mutableMapOf<K, V>()
 
@@ -22,5 +24,14 @@ class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     override fun remove(key: K): V? = innerMap.remove(key)
 }
 
-fun took(_start: Long) = "took ${strFormat(((getTimeNanos() - _start) / 1e6))} ms"
+fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
 
+private val C = TermColors()
+
+object LOGGER {
+    fun trace(msg: Any?) = println(C.gray(msg.toString()))
+    fun debug(msg: Any?) = println(C.magenta(msg.toString()))
+    fun info(msg: Any?) = println(C.blue(msg.toString()))
+    fun warn(msg: Any?) = println(C.yellow(msg.toString()))
+    fun error(msg: Any?) = println(C.red(msg.toString()))
+}

@@ -150,12 +150,12 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
     override var meta: exp? = null
     override fun toString(): String = ":func ${parseMeta(meta)}"
     override fun invoke(p1: exps): exp {
-        val _start = if (PROFILE) getTimeNanos() else 0
+        val _start = if (PROFILE) Platform.getTimeNanos() else 0
         val res = func(p1)
         when {
-            PROFILE && DEBUG -> println(":func ${parseMeta(meta)} ${took(_start)}")
-            DEBUG -> println(":func ${parseMeta(meta)}")
-            PROFILE -> println(":func ${took(_start)}")
+            PROFILE && DEBUG -> LOGGER.trace(":func ${parseMeta(meta)} ${took(_start)}")
+            DEBUG -> LOGGER.debug(":func ${parseMeta(meta)}")
+            PROFILE -> LOGGER.trace(":func ${took(_start)}")
         }
         return res
     }
@@ -199,5 +199,25 @@ data class float(val value: Float) : decimal<Float>(value) {
 
 data class double(val value: Double) : decimal<Double>(value) {
     override fun toString(): String = ":double $value"
+}
+
+@ExperimentalUnsignedTypes
+data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
+    override fun toString(): String = ":ubyte $value"
+}
+
+@ExperimentalUnsignedTypes
+data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
+    override fun toString(): String = ":ushort $value"
+}
+
+@ExperimentalUnsignedTypes
+data class uint(val value: UInt) : integer<Long>(value.toLong()) {
+    override fun toString(): String = ":uint $value"
+}
+
+@ExperimentalUnsignedTypes
+data class ulong(val value: ULong) : integer<Long>(value.toLong()) {
+    override fun toString(): String = ":ulong $value"
 }
 

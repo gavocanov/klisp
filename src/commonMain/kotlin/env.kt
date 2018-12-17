@@ -2,6 +2,7 @@ package klisp
 
 import kotlin.math.PI
 
+@ExperimentalUnsignedTypes
 val stdEnv: env = mutableMapOf(
         symbol("MAX_BYTE") to byte(Byte.MAX_VALUE),
         symbol("MAX_SHORT") to short(Short.MAX_VALUE),

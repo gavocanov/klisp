@@ -3,7 +3,7 @@
 # 2. All obj files under obj folder
 # 3. static library .a at lib folder
 # 4. run 'make dirmake' before calling 'make'
-CFLAGS= -fPIC -O0 -g -Wall -c -fpermissive
+CFLAGS= -fPIC -O0 -g -Wall -c -fpermissive -mmacosx-version-min=10.11
 INC=
 OUT_FILE_NAME = liblinenoise.a
 SRC_DIR=./src/linenoise

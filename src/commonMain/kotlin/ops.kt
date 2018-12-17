@@ -4,9 +4,10 @@ fun begin(args: exps): exp {
     return args.last()
 }
 
+@ExperimentalUnsignedTypes
 fun foldableMathOp(op: mathOp, args: exps): exp {
     require(args.size >= 2) { "$op expects at least 2 arguments" }
-    return when {
+    val res = when {
         args.all { it is byte } -> {
             when (op) {
                 mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as byte).value })
@@ -92,6 +93,21 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         else ->
             throw IllegalArgumentException("$op for arguments of type <${args.map { it::class.simpleName }.joinToString(", ")}> is not supported")
     }
+
+    return when (res) {
+        is byte -> if (res.value == Byte.MAX_VALUE || res.value == Byte.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is short -> if (res.value == Short.MAX_VALUE || res.value == Short.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is int -> if (res.value == Int.MAX_VALUE || res.value == Int.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is long -> if (res.value == Long.MAX_VALUE || res.value == Long.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is ubyte -> if (res.value == UByte.MAX_VALUE || res.value == UByte.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is ushort -> if (res.value == UShort.MAX_VALUE || res.value == UShort.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is uint -> if (res.value == UInt.MAX_VALUE || res.value == UInt.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is ulong -> if (res.value == ULong.MAX_VALUE || res.value == ULong.MIN_VALUE) throw IllegalStateException("under/overflow") else res
+        is float -> if (res.value == Float.POSITIVE_INFINITY || res.value == Float.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow") else res
+        is double -> if (res.value == Double.POSITIVE_INFINITY || res.value == Double.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow") else res
+        is string -> res
+        else -> throw IllegalStateException("result <$res> is unexpected for arguments <$args> and op <$op>")
+    }
 }
 
 fun compare(op: compareOp, args: exps): Boolean {
@@ -164,6 +180,7 @@ fun range(args: exps): collection {
 }
 
 @Suppress("USELESS_CAST") // needed for native target
+@ExperimentalUnsignedTypes
 fun lam(argNames: exp, body: exp, env: env): exp {
     require(argNames is _list) { "arguments should be a list" }
     argNames as _list

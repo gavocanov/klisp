@@ -11,7 +11,7 @@ fun tokenize(s: String, dump: Boolean = false): List<String> {
             .replace("(", " ( ")
             .replace(")", " ) ")
     val tokens = split(parsed)
-    if (dump) println("parsed as: $tokens")
+    if (dump) LOGGER.debug("parsed as: $tokens")
     return tokens
 }
 
@@ -97,8 +97,9 @@ fun parseAtom(s: String): atom = when {
     }
 }
 
+@ExperimentalUnsignedTypes
 fun eval(x: exp, env: env = stdEnv): exp {
-    if (DEBUG) println(":eval <$x>")
+    if (DEBUG) LOGGER.debug(":eval <$x>")
     return when {
         x is unit -> x
         x is symbol && specialForm.isSpecial(x.value) -> {
@@ -112,7 +113,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
                     bool(PROFILE)
                 }
                 specialForm.ENV -> {
-                    env.forEach { (k, v) -> println("$k -> $v") }
+                    env.forEach { (k, v) -> LOGGER.trace("$k -> $v") }
                     unit
                 }
                 else -> throw IllegalArgumentException("unknown symbol <$x>")
@@ -211,34 +212,36 @@ fun eval(x: exp, env: env = stdEnv): exp {
     }
 }
 
+@ExperimentalUnsignedTypes
 fun main(args: Array<String>) {
-    println("**klisp ${version()}**")
+    LOGGER.info("**klisp ${Platform.version()}**")
 
-    val historyFileName = getHistoryFileName()
-    val historyLoaded = loadHistory(historyFileName)
+    val historyFileName = Platform.getHistoryFileName()
+    val historyLoaded = Platform.loadHistory(historyFileName)
 
     while (true) {
         val line = try {
-            readLine("kl -> ")
+            Platform.readLine("kl${Platform.version().first()} -> ")
         } catch (exit: ExitException) {
-            println("bye!!")
+            LOGGER.info("bye!!")
             null
         } catch (t: Throwable) {
-            println(t.message ?: t::class.simpleName)
+            LOGGER.error(t.message ?: t::class.simpleName)
             null
         }
 
         if (line !== null) {
             val res = try {
-                val _start = if (PROFILE) getTimeNanos() else 0
+                val _start = if (PROFILE) Platform.getTimeNanos() else 0
                 val r = eval(parse(line))
-                if (PROFILE) println(":eval/parse ${took(_start)}")
-                saveToHistory(line, historyFileName, historyLoaded)
+                if (PROFILE) LOGGER.trace(":eval/parse ${took(_start)}")
+                Platform.saveToHistory(line, historyFileName, historyLoaded)
                 r
             } catch (t: Throwable) {
                 err(t.message ?: t::class.simpleName)
             }
-            println(res)
-        } else exit(0)
+            if (res is err) LOGGER.error(res.toString())
+            else LOGGER.info(res.toString())
+        } else Platform.exit(0)
     }
 }
