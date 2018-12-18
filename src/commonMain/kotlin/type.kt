@@ -10,7 +10,7 @@ data class ExitException(val msg: String) : Throwable(msg)
 
 enum class compareOp { lte, lt, gte, gt, eq }
 
-enum class mathOp { plus, minus, div, mul }
+enum class mathOp { plus, minus, div, mul, pow, rem, abs }
 
 enum class specialForm(val aliases: List<String>? = null) {
     // symbols
@@ -43,26 +43,32 @@ enum class specialForm(val aliases: List<String>? = null) {
     }
 }
 
-enum class type {
-    byte,
-    short,
-    int,
-    long,
-    float,
-    double,
-    char,
-    string,
-    keyword,
-    bool,
-    list,
-    set,
-    map,
-    collection,
-    number,
-    integer,
-    decimal,
-    symbol,
-    atom
+@ExperimentalUnsignedTypes
+enum class type(val constructor: ((s: String) -> exp)? = null,
+                val isNumber: Boolean = true) {
+    _bool({ bool.fromString(it) }),
+    _byte({ byte.fromString(it) }),
+    _ubyte({ ubyte.fromString(it) }),
+    _short({ short.fromString(it) }),
+    _ushort({ ushort.fromString(it) }),
+    _int({ int.fromString(it) }),
+    _uint({ uint.fromString(it) }),
+    _long({ long.fromString(it) }),
+    _ulong({ ulong.fromString(it) }),
+    _float({ float.fromString(it) }),
+    _double({ double.fromString(it) }),
+    _integer(null, false),
+    _decimal(null, false),
+    _number(null, false),
+    _char(null, false),
+    _string(null, false),
+    _keyword(null, false),
+    _list(null, false),
+    _set(null, false),
+    _map(null, false),
+    _collection(null, false),
+    _symbol(null, false),
+    _atom(null, false)
 }
 
 interface exp {
@@ -76,6 +82,11 @@ interface atom : exp {
 data class err(val msg: String?) : atom {
     override var meta: exp? = null
     override fun toString(): String = ":error\n${msg ?: "unknown error"}"
+}
+
+object nil : atom {
+    override var meta: exp? = null
+    override fun toString(): String = ":nil"
 }
 
 object unit : atom {
@@ -174,50 +185,104 @@ data class symbol(val value: String) : scalar() {
 }
 
 data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil {
+            if (s.toBoolean()) bool(true) else nil
+        }
+    }
+
     override fun toString(): String = ":bool $value"
 }
 
 data class byte(val value: Byte) : integer<Byte>(value) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { byte(s.toByte()) }
+    }
+
     override fun toString(): String = ":byte $value"
 }
 
 data class short(val value: Short) : integer<Short>(value) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { short(s.toShort()) }
+    }
+
     override fun toString(): String = ":short $value"
 }
 
 data class int(val value: Int) : integer<Int>(value) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { int(s.toInt()) }
+    }
+
     override fun toString(): String = ":int $value"
 }
 
 data class long(val value: Long) : integer<Long>(value) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { long(s.toLong()) }
+    }
+
     override fun toString(): String = ":long $value"
 }
 
 data class float(val value: Float) : decimal<Float>(value) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil {
+            val f = s.toFloat()
+            if (f.isFinite()) float(f)
+            else nil
+        }
+    }
+
     override fun toString(): String = ":float $value"
 }
 
 data class double(val value: Double) : decimal<Double>(value) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil {
+            val d = s.toDouble()
+            if (d.isFinite()) double(d)
+            else nil
+        }
+    }
+
     override fun toString(): String = ":double $value"
 }
 
 @ExperimentalUnsignedTypes
 data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { ubyte(s.toUByte()) }
+    }
+
     override fun toString(): String = ":ubyte $value"
 }
 
 @ExperimentalUnsignedTypes
 data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { ushort(s.toUShort()) }
+    }
+
     override fun toString(): String = ":ushort $value"
 }
 
 @ExperimentalUnsignedTypes
 data class uint(val value: UInt) : integer<Long>(value.toLong()) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { uint(s.toUInt()) }
+    }
+
     override fun toString(): String = ":uint $value"
 }
 
 @ExperimentalUnsignedTypes
-data class ulong(val value: ULong) : integer<Long>(value.toLong()) {
+data class ulong(val value: ULong) : decimal<Double>(value.toString().toDouble()) {
+    companion object {
+        fun fromString(s: String): exp = tryOrNil { ulong(s.toULong()) }
+    }
+
     override fun toString(): String = ":ulong $value"
 }
 

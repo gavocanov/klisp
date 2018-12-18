@@ -23,9 +23,11 @@ fun split(s: String): List<String> =
                 .map { it.value }
                 .toList()
 
+@ExperimentalUnsignedTypes
 fun parse(s: String): exp =
         readFromTokens(tokenize(s, DEBUG).toMutableList())
 
+@ExperimentalUnsignedTypes
 fun readFromTokens(tokens: MutableList<String>): exp {
     if (tokens.isEmpty()) return unit
     val token = tokens.first()
@@ -47,6 +49,7 @@ fun readFromTokens(tokens: MutableList<String>): exp {
     }
 }
 
+@ExperimentalUnsignedTypes
 fun parseAtom(s: String): atom = when {
     s.startsWith(':') -> keyword(s)
     s.startsWith('"') && s.endsWith('"') -> string(s)
@@ -63,37 +66,19 @@ fun parseAtom(s: String): atom = when {
         }.toMap())
     }
     else -> {
-        try {
-            byte(s.toByte())
-        } catch (_: Throwable) {
-            try {
-                short(s.toShort())
-            } catch (_: Throwable) {
-                try {
-                    int(s.toInt())
-                } catch (_: Throwable) {
-                    try {
-                        long(s.toLong())
-                    } catch (_: Throwable) {
-                        try {
-                            val f = float(s.toFloat())
-                            if (f.value.isInfinite() || f.value.isNaN())
-                                throw IllegalStateException()
-                            else f
-                        } catch (_: Throwable) {
-                            try {
-                                val d = double(s.toDouble())
-                                if (d.value.isInfinite() || d.value.isNaN())
-                                    throw IllegalStateException()
-                                else d
-                            } catch (_: Throwable) {
-                                symbol(s)
-                            }
-                        }
-                    }
-                }
-            }
+        val constructors = type
+                .values()
+                .filter(type::isNumber)
+                .mapNotNull(type::constructor)
+
+        var value: atom? = null
+        for (f in constructors) {
+            value = f(s) as atom
+            if (value !== nil) break
         }
+
+        if (value === nil || value === null) symbol(s)
+        else value
     }
 }
 

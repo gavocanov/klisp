@@ -1,19 +1,54 @@
 package klisp
 
+import kotlin.math.absoluteValue
+import kotlin.math.pow
+
 fun begin(args: exps): exp {
     return args.last()
 }
 
 @ExperimentalUnsignedTypes
 fun foldableMathOp(op: mathOp, args: exps): exp {
-    require(args.size >= 2) { "$op expects at least 2 arguments" }
+    require(args.isNotEmpty()) { "$op expects at least 1 argument" }
     val res = when {
+        args.all { it is integer<*> } && args.any { (it as integer<*>).asLong == Long.MAX_VALUE } -> {
+            when (op) {
+                mathOp.plus -> ulong(args.fold(0UL) { a, n -> a + (n as integer<*>).numericValue.toString().toULong() })
+                mathOp.minus -> ulong(args.drop(1).fold((args.first() as integer<*>).numericValue.toString().toULong()) { a, n -> a - (n as integer<*>).numericValue.toString().toULong() })
+                mathOp.div -> double(args.drop(1).fold((args.first() as integer<*>).asDouble) { a, n -> a / (n as integer<*>).asDouble })
+                mathOp.mul -> ulong(args.fold(1UL) { a, n -> a * (n as integer<*>).numericValue.toString().toULong() })
+                mathOp.pow -> {
+                    require(args.size == 2) { "$op expects exactly 2 parameters" }
+                    double((args[0] as integer<*>).asDouble.pow((args[1] as integer<*>).asDouble))
+                }
+                mathOp.rem -> {
+                    require(args.size == 2) { "$op expects exactly 2 parameters" }
+                    double((args[0] as integer<*>).asDouble.rem((args[1] as integer<*>).asDouble))
+                }
+                mathOp.abs -> {
+                    require(args.size == 1) { "$op expects exactly 1 parameter" }
+                    args[0] as ulong
+                }
+            }
+        }
         args.all { it is integer<*> } -> {
             when (op) {
                 mathOp.plus -> long(args.fold(0L) { a, n -> a + (n as integer<*>).asLong })
                 mathOp.minus -> long(args.drop(1).fold((args.first() as integer<*>).asLong) { a, n -> a - (n as integer<*>).asLong })
                 mathOp.div -> double(args.drop(1).fold((args.first() as integer<*>).asDouble) { a, n -> a / (n as integer<*>).asLong })
-                mathOp.mul -> long(args.fold(1L) { a, n -> a * (n as integer<*>).asLong })
+                mathOp.mul -> ulong(args.fold(1UL) { a, n -> a * (n as integer<*>).numericValue.toString().toULong() })
+                mathOp.pow -> {
+                    require(args.size == 2) { "$op expects exactly 2 parameters" }
+                    double((args[0] as integer<*>).asDouble.pow((args[1] as integer<*>).asDouble))
+                }
+                mathOp.rem -> {
+                    require(args.size == 2) { "$op expects exactly 2 parameters" }
+                    double((args[0] as integer<*>).asDouble.rem((args[1] as integer<*>).asDouble))
+                }
+                mathOp.abs -> {
+                    require(args.size == 1) { "$op expects exactly 1 parameter" }
+                    long((args[0] as integer<*>).asLong.absoluteValue)
+                }
             }
         }
         args.all { it is number<*> } -> {
@@ -22,6 +57,18 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                 mathOp.minus -> double(args.drop(1).fold((args.first() as number<*>).asDouble) { a, n -> a - (n as number<*>).asDouble })
                 mathOp.div -> double(args.drop(1).fold((args.first() as number<*>).asDouble) { a, n -> a / (n as number<*>).asDouble })
                 mathOp.mul -> double(args.fold(1.0) { a, n -> a * (n as number<*>).asDouble })
+                mathOp.pow -> {
+                    require(args.size == 2) { "$op expects exactly 2 parameters" }
+                    double((args[0] as number<*>).asDouble.pow((args[1] as number<*>).asDouble))
+                }
+                mathOp.rem -> {
+                    require(args.size == 2) { "$op expects exactly 2 parameters" }
+                    double((args[0] as number<*>).asDouble.rem((args[1] as number<*>).asDouble))
+                }
+                mathOp.abs -> {
+                    require(args.size == 1) { "$op expects exactly 1 parameter" }
+                    double((args[0] as number<*>).asDouble.absoluteValue)
+                }
             }
         }
         args.all { it is string || it is number<*> || it is bool } -> {
@@ -40,6 +87,9 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                 mathOp.minus -> TODO()
                 mathOp.div -> TODO()
                 mathOp.mul -> TODO()
+                mathOp.pow -> TODO()
+                mathOp.rem -> TODO()
+                mathOp.abs -> TODO()
             }
         }
         else ->
@@ -47,9 +97,9 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
     }
 
     return when (res) {
-        is long -> if (res.value == Long.MAX_VALUE || res.value == Long.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-//        is ulong -> if (res.value == ULong.MAX_VALUE || res.value == ULong.MIN_VALUE) throw IllegalStateException("under/overflow") else res
-        is double -> if (res.value == Double.POSITIVE_INFINITY || res.value == Double.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow") else res
+        is long -> if (res.value == Long.MAX_VALUE || res.value == Long.MIN_VALUE) throw IllegalStateException("under/overflow res <$res>, args <$args>, op <$op>") else res
+        is ulong -> if (res.value == ULong.MAX_VALUE || res.value == ULong.MIN_VALUE) throw IllegalStateException("under/overflow res <$res>, args <$args>, op <$op>") else res
+        is double -> if (res.value == Double.POSITIVE_INFINITY || res.value == Double.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow res <$res>, args <$args>, op <$op>") else res
         is string -> res
         else -> throw IllegalStateException("result <$res> is unexpected for arguments <$args> and op <$op>")
     }
@@ -70,31 +120,36 @@ fun compare(op: compareOp, args: exps): Boolean {
     }
 }
 
+@ExperimentalUnsignedTypes
 fun isa(t: type, args: exps): exp {
     require(args.size == 1) { "$t? should have 1 argument, got ${args.size}" }
     val value = args.first()
     return bool(
             try {
                 when (t) {
-                    type.byte -> value as byte
-                    type.short -> value as short
-                    type.int -> value as int
-                    type.long -> value as long
-                    type.float -> value as float
-                    type.double -> value as double
-                    type.char -> value as char
-                    type.string -> value as string
-                    type.bool -> value as bool
-                    type.keyword -> value as keyword
-                    type.list -> value as list
-                    type.set -> value as set
-                    type.map -> value as map
-                    type.collection -> value as collection
-                    type.number -> value as number<*>
-                    type.integer -> value as integer<*>
-                    type.decimal -> value as decimal<*>
-                    type.symbol -> value as symbol
-                    type.atom -> value as atom
+                    type._byte -> value as byte
+                    type._short -> value as short
+                    type._int -> value as int
+                    type._long -> value as long
+                    type._float -> value as float
+                    type._double -> value as double
+                    type._char -> value as char
+                    type._string -> value as string
+                    type._bool -> value as bool
+                    type._keyword -> value as keyword
+                    type._list -> value as list
+                    type._set -> value as set
+                    type._map -> value as map
+                    type._collection -> value as collection
+                    type._number -> value as number<*>
+                    type._integer -> value as integer<*>
+                    type._decimal -> value as decimal<*>
+                    type._symbol -> value as symbol
+                    type._atom -> value as atom
+                    type._ubyte -> value as ubyte
+                    type._ushort -> value as ushort
+                    type._uint -> value as uint
+                    type._ulong -> value as ulong
                 }
                 true
             } catch (_: Throwable) {

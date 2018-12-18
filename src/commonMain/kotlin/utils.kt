@@ -26,8 +26,13 @@ class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
 
 fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
 
-private val C = TermColors()
+fun tryOrNil(f: () -> exp) = try {
+    f()
+} catch (_: Throwable) {
+    nil
+}
 
+private val C = TermColors()
 object LOGGER {
     fun trace(msg: Any?) = println(C.gray(msg.toString()))
     fun debug(msg: Any?) = println(C.magenta(msg.toString()))
