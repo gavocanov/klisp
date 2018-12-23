@@ -16,8 +16,8 @@ val stdEnv: env = mutableMapOf(
         symbol("MAX_DOUBLE") to double(Double.MAX_VALUE),
         symbol("PI") to double(PI),
         symbol("pi") to double(PI),
-        symbol("true") to bool(true),
-        symbol("false") to bool(false),
+//        symbol("true") to bool(true),
+//        symbol("false") to bool(false),
         symbol("begin") to func { begin(it) },
         symbol("range") to func { range(it) },
         symbol("list") to func { list(it) },
@@ -66,7 +66,9 @@ val stdEnv: env = mutableMapOf(
         symbol("decimal?") to func { it: exps -> isa(type._decimal, it) },
         symbol("symbol?") to func { it: exps -> isa(type._symbol, it) },
         symbol("atom?") to func { it: exps -> isa(type._atom, it) },
+        symbol("bool?") to func { it: exps -> isa(type._bool, it) },
         symbol("is?") to func { _is(it) },
+        symbol("json") to func { json(it) },
         symbol("eq?") to func { eq(it) },
         symbol("equal?") to func { eq(it) }
 ).also { it.map { (k, v) -> v.meta = k } }

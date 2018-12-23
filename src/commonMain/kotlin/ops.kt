@@ -3,9 +3,7 @@ package klisp
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
-fun begin(args: exps): exp {
-    return args.last()
-}
+fun begin(args: exps): exp = args.last()
 
 @ExperimentalUnsignedTypes
 fun foldableMathOp(op: mathOp, args: exps): exp {
@@ -84,12 +82,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
                     }
                     string("\"$s\"")
                 }
-                mathOp.minus -> TODO()
-                mathOp.div -> TODO()
-                mathOp.mul -> TODO()
-                mathOp.pow -> TODO()
-                mathOp.rem -> TODO()
-                mathOp.abs -> TODO()
+                else -> throw IllegalArgumentException("$op for arguments of type <${args.map { it::class.simpleName }.joinToString(", ")}> is not supported")
             }
         }
         else ->
@@ -170,6 +163,7 @@ fun eq(args: exps): exp {
     return bool(f == s)
 }
 
+@ExperimentalUnsignedTypes
 fun range(args: exps): collection {
     require(args.size == 2) { "range requires 2 arguments, got ${args.size}" }
     require(args.all { it is integer<*> }) { "range requires 2 integer arguments" }
@@ -194,6 +188,7 @@ fun lam(argNames: exp, body: exp, env: env): exp {
     }
 }
 
+@ExperimentalUnsignedTypes
 @Suppress("USELESS_CAST") // needed for native target
 fun fmap(exp: exp, list: exp): exp {
     require(list is collection) { "second argument should be a collection" }
@@ -208,8 +203,16 @@ fun fmap(exp: exp, list: exp): exp {
     }
 }
 
+@ExperimentalUnsignedTypes
 fun set(it: exps): exp = when {
     it.first() is list -> set((it.first() as list).toSet())
     else -> set(it.toSet())
+}
+
+fun json(args: exps): string {
+    require(args.size == 1) { "json should have 1 argument, got ${args.size}" }
+    require(args[0] is map) { "argument should be a map" }
+    val map = args.first()
+    return string(map.serialize())
 }
 

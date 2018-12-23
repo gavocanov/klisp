@@ -40,3 +40,9 @@ object LOGGER {
     fun warn(msg: Any?) = println(C.yellow(msg.toString()))
     fun error(msg: Any?) = println(C.red(msg.toString()))
 }
+
+val String.quoted: String
+    get() = "\"$this\""
+
+fun Any.toQuotedString() = this.toString().quoted
+
