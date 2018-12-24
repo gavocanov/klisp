@@ -194,10 +194,7 @@ fun fmap(exp: exp, list: exp): exp {
     require(list is collection) { "second argument should be a collection" }
     list as collection
     return when (exp) {
-        is func -> list(list.map {
-            listOf(it)
-            exp(listOf(it))
-        })
+        is func -> list(list.map { exp(listOf(it)) })
         is atom -> list(list.map { exp })
         else -> throw IllegalStateException("this should not be...")
     }
@@ -214,5 +211,39 @@ fun json(args: exps): string {
     require(args[0] is map) { "argument should be a map" }
     val map = args.first()
     return string(map.serialize())
+}
+
+@ExperimentalUnsignedTypes
+fun map(it: exps): exp {
+    val keys = it.filter { it is keyword }.map { it as keyword }
+    val vals = it.filter { it !is keyword }
+    require(vals.size == keys.size) { "invalid k/v count <k:${keys.size}, v:${vals.size}>" }
+    return map(value = keys.zip(vals).toMap())
+}
+
+@ExperimentalUnsignedTypes
+@Suppress("USELESS_CAST") // needed for native target
+fun filter(exp: exp, list: exp): exp {
+    require(list is collection) { "second argument should be a collection" }
+    list as collection
+    return when (exp) {
+        is func -> list(list.filter {
+            (exp(listOf(it)) as bool).value
+        })
+        else -> throw IllegalStateException("this should not be...")
+    }
+}
+
+@ExperimentalUnsignedTypes
+@Suppress("USELESS_CAST") // needed for native target
+fun reduce(id: exp, exp: exp, list: exp): exp {
+    require(list is collection) { "third argument should be a collection" }
+    list as collection
+    return when (exp) {
+        is func -> list.fold(id) { a, n ->
+            (exp(listOf(a, n))) as exp
+        }
+        else -> throw IllegalStateException("this should not be...")
+    }
 }
 

@@ -2,6 +2,36 @@ package klisp
 
 import klisp.tty.TermColors
 
+fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
+val String.quoted: String get() = "\"$this\""
+fun Any.toQuotedString() = this.toString().quoted
+
+fun tryOrNil(f: () -> exp) = try {
+    f()
+} catch (_: Throwable) {
+    nil
+}
+
+/**
+ * split by space not contained in "", '', [] and {}
+ */
+@Suppress("unused")
+fun splitNotSurrounded(s: String): List<String> =
+        "[^\\s\"'{\\[]+|\"([^\"]*)\"|'([^']*)'|\\{([^{]*)}|\\[([^\\[]*)]"
+                .toRegex()
+                .findAll(s)
+                .map { it.value }
+                .toList()
+
+object LOGGER {
+    private val C = TermColors()
+    fun trace(msg: Any?) = println(C.gray(msg.toString()))
+    fun debug(msg: Any?) = println(C.magenta(msg.toString()))
+    fun info(msg: Any?) = println(C.blue(msg.toString()))
+    fun warn(msg: Any?) = println(C.yellow(msg.toString()))
+    fun error(msg: Any?) = println(C.red(msg.toString()))
+}
+
 class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     private val innerMap = mutableMapOf<K, V>()
 
@@ -23,26 +53,4 @@ class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     override fun putAll(from: Map<out K, V>) = innerMap.putAll(from)
     override fun remove(key: K): V? = innerMap.remove(key)
 }
-
-fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
-
-fun tryOrNil(f: () -> exp) = try {
-    f()
-} catch (_: Throwable) {
-    nil
-}
-
-private val C = TermColors()
-object LOGGER {
-    fun trace(msg: Any?) = println(C.gray(msg.toString()))
-    fun debug(msg: Any?) = println(C.magenta(msg.toString()))
-    fun info(msg: Any?) = println(C.blue(msg.toString()))
-    fun warn(msg: Any?) = println(C.yellow(msg.toString()))
-    fun error(msg: Any?) = println(C.red(msg.toString()))
-}
-
-val String.quoted: String
-    get() = "\"$this\""
-
-fun Any.toQuotedString() = this.toString().quoted
 

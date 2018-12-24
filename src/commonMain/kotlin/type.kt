@@ -23,7 +23,9 @@ enum class specialForm(val aliases: List<String>? = null) {
     IF,
     UNLESS,
     WHEN,
-    MAP,
+    FMAP,
+    FILTER,
+    REDUCE,
     QUOTE;
 
     companion object {
@@ -218,8 +220,10 @@ data class symbol(val value: String) : scalar() {
 
 data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil {
-            if (s.toBoolean()) bool(true) else nil
+        fun fromString(s: String): exp = when {
+            s.toLowerCase() == "true" -> bool(true)
+            s.toLowerCase() == "false" -> bool(false)
+            else -> nil
         }
     }
 
