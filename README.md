@@ -1,8 +1,4 @@
-# Hello World
+KLISP
 
-A basic "Hello, World" in Kotlin/Native and Gradle.
-
-Use the following Gradle commands
-* to build: `./gradlew assemble`
-* to test: `./gradlew check`
-* to run:  `./gradlew runProgram`
+a lisp in kotlin multiplatform,
+don't ask....it's just fun ;)
