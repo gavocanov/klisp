@@ -6,7 +6,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
     return when {
         x is unit -> x
         x is symbol && specialForm.isSpecial(x.value) -> {
-            when (specialForm.fromString(x.value)) {
+            when (specialForm.from(x.value)) {
                 specialForm.DEBUG -> {
                     DEBUG = !DEBUG
                     bool(DEBUG)
@@ -100,9 +100,6 @@ fun eval(x: exp, env: env = stdEnv): exp {
                     val exp = eval(_exp)
                     reduce(id, exp, list)
                 }
-                specialForm.DEBUG -> TODO()
-                specialForm.PROFILE -> TODO()
-                specialForm.ENV -> TODO()
                 else -> throw IllegalArgumentException("unknown symbol <${x[0]}> in expression <$x>")
             }
         }

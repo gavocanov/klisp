@@ -33,7 +33,7 @@ enum class specialForm(val aliases: List<String>? = null) {
         private val values = specialForm.values().map { it.name.toLowerCase() }
         fun isSpecial(s: String): Boolean = (values + aliases).any { it == s }
         fun isSpecial(s: symbol): Boolean = isSpecial(s.value)
-        fun fromString(s: String): specialForm {
+        fun from(s: String): specialForm {
             for (v in values()) {
                 if (v.aliases?.contains(s) == true)
                     return v
@@ -41,24 +41,24 @@ enum class specialForm(val aliases: List<String>? = null) {
             return specialForm.valueOf(s.toUpperCase())
         }
 
-        fun fromSymbol(s: symbol): specialForm = specialForm.fromString(s.value)
+        fun fromSymbol(s: symbol): specialForm = specialForm.from(s.value)
     }
 }
 
 @ExperimentalUnsignedTypes
 enum class type(val constructor: ((s: String) -> exp)? = null,
                 val isNumber: Boolean = true) {
-    _bool({ bool.fromString(it) }),
-    _byte({ byte.fromString(it) }),
-    _ubyte({ ubyte.fromString(it) }),
-    _short({ short.fromString(it) }),
-    _ushort({ ushort.fromString(it) }),
-    _int({ int.fromString(it) }),
-    _uint({ uint.fromString(it) }),
-    _long({ long.fromString(it) }),
-    _ulong({ ulong.fromString(it) }),
-    _float({ float.fromString(it) }),
-    _double({ double.fromString(it) }),
+    _bool({ bool.from(it) }),
+    _byte({ byte.from(it) }),
+    _ubyte({ ubyte.from(it) }),
+    _short({ short.from(it) }),
+    _ushort({ ushort.from(it) }),
+    _int({ int.from(it) }),
+    _uint({ uint.from(it) }),
+    _long({ long.from(it) }),
+    _ulong({ ulong.from(it) }),
+    _float({ float.from(it) }),
+    _double({ double.from(it) }),
     _integer(null, false),
     _decimal(null, false),
     _number(null, false),
@@ -220,7 +220,7 @@ data class symbol(val value: String) : scalar() {
 
 data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
     companion object {
-        fun fromString(s: String): exp = when {
+        fun from(s: String): exp = when {
             s.toLowerCase() == "true" -> bool(true)
             s.toLowerCase() == "false" -> bool(false)
             else -> nil
@@ -234,7 +234,7 @@ data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
 
 data class byte(val value: Byte) : integer<Byte>(value) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { byte(s.toByte()) }
+        fun from(s: String): exp = tryOrNil { byte(s.toByte()) }
     }
 
     override fun deserialize(s: String): atom = byte(s.toByte())
@@ -243,7 +243,7 @@ data class byte(val value: Byte) : integer<Byte>(value) {
 
 data class short(val value: Short) : integer<Short>(value) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { short(s.toShort()) }
+        fun from(s: String): exp = tryOrNil { short(s.toShort()) }
     }
 
     override fun deserialize(s: String): atom = short(s.toShort())
@@ -252,7 +252,7 @@ data class short(val value: Short) : integer<Short>(value) {
 
 data class int(val value: Int) : integer<Int>(value) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { int(s.toInt()) }
+        fun from(s: String): exp = tryOrNil { int(s.toInt()) }
     }
 
     override fun deserialize(s: String): atom = int(s.toInt())
@@ -261,7 +261,7 @@ data class int(val value: Int) : integer<Int>(value) {
 
 data class long(val value: Long) : integer<Long>(value) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { long(s.toLong()) }
+        fun from(s: String): exp = tryOrNil { long(s.toLong()) }
     }
 
     override fun deserialize(s: String): atom = long(s.toLong())
@@ -270,10 +270,14 @@ data class long(val value: Long) : integer<Long>(value) {
 
 data class float(val value: Float) : decimal<Float>(value) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil {
+        fun from(s: String): exp = tryOrNil {
             val f = s.toFloat()
-            if (f.isFinite()) float(f)
-            else nil
+            if (f == 0.0f && s.toDouble() != 0.0) // this happens, wtf?
+                nil
+            else {
+                if (f.isFinite()) float(f)
+                else nil
+            }
         }
     }
 
@@ -281,13 +285,17 @@ data class float(val value: Float) : decimal<Float>(value) {
     override fun toString(): String = ":float $value"
 }
 
+@ExperimentalUnsignedTypes
 data class double(val value: Double) : decimal<Double>(value) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil {
+        fun from(s: String): exp = tryOrNil {
             val d = s.toDouble()
             if (d.isFinite()) double(d)
             else nil
         }
+
+        fun from(num: Number) = double.from("$num")
+        fun from(num: ULong) = double.from("$num")
     }
 
     override fun deserialize(s: String): atom = double(s.toDouble())
@@ -297,7 +305,7 @@ data class double(val value: Double) : decimal<Double>(value) {
 @ExperimentalUnsignedTypes
 data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { ubyte(s.toUByte()) }
+        fun from(s: String): exp = tryOrNil { ubyte(s.toUByte()) }
     }
 
     override fun deserialize(s: String): atom = ubyte(s.toUByte())
@@ -307,7 +315,7 @@ data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
 @ExperimentalUnsignedTypes
 data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { ushort(s.toUShort()) }
+        fun from(s: String): exp = tryOrNil { ushort(s.toUShort()) }
     }
 
     override fun deserialize(s: String): atom = ushort(s.toUShort())
@@ -317,7 +325,7 @@ data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
 @ExperimentalUnsignedTypes
 data class uint(val value: UInt) : integer<Long>(value.toLong()) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { uint(s.toUInt()) }
+        fun from(s: String): exp = tryOrNil { uint(s.toUInt()) }
     }
 
     override fun deserialize(s: String): atom = uint(s.toUInt())
@@ -327,7 +335,8 @@ data class uint(val value: UInt) : integer<Long>(value.toLong()) {
 @ExperimentalUnsignedTypes
 data class ulong(val value: ULong) : decimal<Double>(value.toString().toDouble()) {
     companion object {
-        fun fromString(s: String): exp = tryOrNil { ulong(s.toULong()) }
+        fun from(s: String): exp = tryOrNil { ulong(s.toULong()) }
+        fun from(number: Number) = ulong(number.toString().toULong())
     }
 
     override fun deserialize(s: String): atom = ulong(s.toULong())
