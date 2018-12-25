@@ -20,7 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @ExperimentalUnsignedTypes
-class Atoms {
+class AtomsTest {
     @Test
     fun bool() {
         assertEquals(bool(true), _eval("true"), "true")

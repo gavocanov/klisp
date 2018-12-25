@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @ExperimentalUnsignedTypes
-class Math {
+class MathTest {
     @Test
     fun `plus bytes`() {
         assertTrue { _eval("1") is byte }

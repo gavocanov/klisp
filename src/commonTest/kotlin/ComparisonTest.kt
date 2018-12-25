@@ -3,7 +3,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @ExperimentalUnsignedTypes
-class Comparison {
+class ComparisonTest {
     @Test
     fun gt() {
         assertEquals(bool(true), _eval("(> 2 1)"))
