@@ -1,10 +1,13 @@
 package klisp
 
+import kotlinx.serialization.ImplicitReflectionSerializer
+
 var PROFILE = false
 var DEBUG = false
 const val HISTORY_FILE_NAME = ".kl_history"
 
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun main(args: Array<String>) {
     LOGGER.info("**klisp ${Platform.version()}**")
 

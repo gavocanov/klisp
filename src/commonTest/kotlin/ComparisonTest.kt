@@ -1,152 +1,158 @@
-import klisp.bool
+import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
+@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class ComparisonTest {
     @Test
     fun gt() {
-        assertEquals(bool(true), _eval("(> 2 1)"))
-        assertEquals(bool(true), _eval("(> .2 .1)"))
-        assertEquals(bool(false), _eval("(> 2 3)"))
-        assertEquals(bool(false), _eval("(> .2 .3)"))
+        "(> 2 1)" shouldEvalTo true
+        "(> .2 .1)" shouldEvalTo true
+        "(> 2 3)" shouldEvalTo false
+        "(> .2 .3)" shouldEvalTo false
     }
 
     @Test
     fun gte() {
-        assertEquals(bool(true), _eval("(>= 2 2)"))
-        assertEquals(bool(true), _eval("(>= .2 .2)"))
-        assertEquals(bool(false), _eval("(>= 2 4)"))
-        assertEquals(bool(false), _eval("(>= .2 .4)"))
+        "(>= 2 2)" shouldEvalTo true
+        "(>= .2 .2)" shouldEvalTo true
+        "(>= 2 4)" shouldEvalTo false
+        "(>= .2 .4)" shouldEvalTo false
     }
 
     @Test
     fun lt() {
-        assertEquals(bool(true), _eval("(< 1 2)"))
-        assertEquals(bool(true), _eval("(< .1 .2)"))
-        assertEquals(bool(false), _eval("(< 2 2)"))
-        assertEquals(bool(false), _eval("(< .2 .2)"))
+        "(< 1 2)" shouldEvalTo true
+        "(< .1 .2)" shouldEvalTo true
+        "(< 2 2)" shouldEvalTo false
+        "(< .2 .2)" shouldEvalTo false
     }
 
     @Test
     fun lte() {
-        assertEquals(bool(true), _eval("(<= 2 2)"))
-        assertEquals(bool(true), _eval("(<= .2 .2)"))
-        assertEquals(bool(false), _eval("(<= 5 2)"))
-        assertEquals(bool(false), _eval("(<= .5 .2)"))
+        "(<= 2 2)" shouldEvalTo true
+        "(<= .2 .2)" shouldEvalTo true
+        "(<= 5 2)" shouldEvalTo false
+        "(<= .5 .2)" shouldEvalTo false
     }
 
     @Test
     fun `equality =`() {
-        assertEquals(bool(true), _eval("(= 2 2)"))
-        assertEquals(bool(true), _eval("(= .2 .2)"))
-        assertEquals(bool(false), _eval("(= 2 3)"))
-        assertEquals(bool(false), _eval("(= .2 .3)"))
-        assertEquals(bool(false), _eval("(= true false)"))
-        assertEquals(bool(true), _eval("(= true true)"))
-        assertEquals(bool(true), _eval("(= false false)"))
+        "(= 2 2)" shouldEvalTo true
+        "(= .2 .2)" shouldEvalTo true
+        "(= 2 3)" shouldEvalTo false
+        "(= .2 .3)" shouldEvalTo false
+        "(= true false)" shouldEvalTo false
+        "(= true true)" shouldEvalTo true
+        "(= false false)" shouldEvalTo true
     }
 
     @Test
     fun `equality eq?`() {
-        assertEquals(bool(true), _eval("(eq? 2 2)"))
-        assertEquals(bool(true), _eval("(eq? .2 .2)"))
-        assertEquals(bool(false), _eval("(eq? 2 1)"))
-        assertEquals(bool(false), _eval("(eq? .2 .1)"))
-        assertEquals(bool(false), _eval("(eq? true false)"))
-        assertEquals(bool(true), _eval("(eq? true true)"))
-        assertEquals(bool(true), _eval("(eq? false false)"))
+        "(eq? 2 2)" shouldEvalTo true
+        "(eq? .2 .2)" shouldEvalTo true
+        "(eq? 2 1)" shouldEvalTo false
+        "(eq? .2 .1)" shouldEvalTo false
+        "(eq? true false)" shouldEvalTo false
+        "(eq? true true)" shouldEvalTo true
+        "(eq? false false)" shouldEvalTo true
     }
 
     @Test
     fun str() {
-        assertEquals(bool(true), _eval("(string? \"1\")"))
-        assertEquals(bool(false), _eval("(string? 1)"))
+        "(string? \"1\")" shouldEvalTo true
+        "(string? 1)" shouldEvalTo false
     }
 
     @Test
     fun chr() {
-        assertEquals(bool(true), _eval("(char? '1')"))
-        assertEquals(bool(false), _eval("(char? 1)"))
-        assertEquals(bool(false), _eval("(char? \"1\")"))
+        "(char? '1')" shouldEvalTo true
+        "(char? 1)" shouldEvalTo false
+        "(char? \"1\")" shouldEvalTo false
     }
 
     @Test
     fun num() {
-        assertEquals(bool(true), _eval("(number? 1)"))
-        assertEquals(bool(true), _eval("(number? 1.011)"))
-        assertEquals(bool(true), _eval("(number? true)"))
-        assertEquals(bool(true), _eval("(number? false)"))
-        assertEquals(bool(false), _eval("(number? (list))"), "list")
+        "(number? 1)" shouldEvalTo true
+        "(number? 1.011)" shouldEvalTo true
+        "(number? true)" shouldEvalTo true
+        "(number? false)" shouldEvalTo true
+        "(number? (list))" shouldEvalTo false
     }
 
     @Test
     fun integer() {
-        assertEquals(bool(true), _eval("(integer? 1)"))
-        assertEquals(bool(false), _eval("(integer? 1.011)"))
-        assertEquals(bool(true), _eval("(integer? true)"))
-        assertEquals(bool(true), _eval("(integer? false)"))
-        assertEquals(bool(false), _eval("(integer? (list))"), "list")
+        "(integer? 1)" shouldEvalTo true
+        "(integer? 1.011)" shouldEvalTo false
+        "(integer? true)" shouldEvalTo true
+        "(integer? false)" shouldEvalTo true
+        "(integer? (list))" shouldEvalTo false
     }
 
     @Test
     fun dec() {
-        assertEquals(bool(false), _eval("(decimal? 1)"))
-        assertEquals(bool(true), _eval("(decimal? 1.011)"))
-        assertEquals(bool(false), _eval("(decimal? true)"))
-        assertEquals(bool(false), _eval("(decimal? false)"))
-        assertEquals(bool(false), _eval("(decimal? (list))"), "list")
+        "(decimal? 1)" shouldEvalTo false
+        "(decimal? 1.011)" shouldEvalTo true
+        "(decimal? true)" shouldEvalTo false
+        "(decimal? false)" shouldEvalTo false
+        "(decimal? (list))" shouldEvalTo false
     }
 
     @Test
     fun keyword() {
-        assertEquals(bool(true), _eval("(keyword? :a)"))
-        assertEquals(bool(false), _eval("(keyword? 1)"))
+        "(keyword? :a)" shouldEvalTo true
+        "(keyword? 1)" shouldEvalTo false
     }
 
     @Test
     fun atom() {
-        assertEquals(bool(true), _eval("(atom? pi)"))
-        assertEquals(bool(true), _eval("(atom? 1)"))
-        assertEquals(bool(true), _eval("(atom? true)"))
-        assertEquals(bool(true), _eval("(atom? false)"))
-        assertEquals(bool(true), _eval("(atom? .1)"))
-        assertEquals(bool(true), _eval("(atom? '1')"))
-        assertEquals(bool(true), _eval("(atom? \"1\")"))
-        assertEquals(bool(true), _eval("(atom? (def a 1))"))
-        assertEquals(bool(true), _eval("(atom? (map :a 1))"))
-        assertEquals(bool(true), _eval("(atom? (list :a 1))"))
-        assertEquals(bool(true), _eval("(atom? (set :a 1))"))
+        "(atom? pi)" shouldEvalTo true
+        "(atom? 1)" shouldEvalTo true
+        "(atom? true)" shouldEvalTo true
+        "(atom? false)" shouldEvalTo true
+        "(atom? .1)" shouldEvalTo true
+        "(atom? '1')" shouldEvalTo true
+        "(atom? \"1\")" shouldEvalTo true
+        "(atom? (def a 1))" shouldEvalTo true
+        "(atom? (map :a 1))" shouldEvalTo true
+        "(atom? (list :a 1))" shouldEvalTo true
+        "(atom? (set :a 1))" shouldEvalTo true
 
-        assertEquals(bool(false), _eval("(atom? +)"))
-        assertEquals(bool(false), _eval("(atom? (lam (x) (+ 1 x)))"))
+        "(atom? +)" shouldEvalTo false
+        "(atom? (lam (x) (+ 1 x)))" shouldEvalTo false
     }
 
     @Test
     fun list() {
-        assertEquals(bool(true), _eval("(list? (list 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(false), _eval("(list? (set 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(false), _eval("(list? (map :a 1))"))
+        "(list? (list 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo true
+        "(list? (set 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo false
+        "(list? (map :a 1))" shouldEvalTo false
     }
 
     @Test
     fun set() {
-        assertEquals(bool(false), _eval("(set? (list 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(true), _eval("(set? (set 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(false), _eval("(set? (map :a 1))"))
+        "(set? (list 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo false
+        "(set? (set 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo true
+        "(set? (map :a 1))" shouldEvalTo false
     }
 
     @Test
     fun collection() {
-        assertEquals(bool(true), _eval("(collection? (list 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(true), _eval("(collection? (set 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(false), _eval("(collection? (map :a 1))"))
+        "(collection? (list 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo true
+        "(collection? (set 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo true
+        "(collection? (map :a 1))" shouldEvalTo false
     }
 
     @Test
     fun map() {
-        assertEquals(bool(false), _eval("(map? (list 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(false), _eval("(map? (set 1 2 3 (list 1 (set 1 2 1 2))))"))
-        assertEquals(bool(true), _eval("(map? (map :a 1))"))
+        "(map? (list 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo false
+        "(map? (set 1 2 3 (list 1 (set 1 2 1 2))))" shouldEvalTo false
+        "(map? (map :a 1))" shouldEvalTo true
+    }
+
+    @Test
+    fun isa() {
+        "(is? pi pi)" shouldEvalTo true
+        "(is? pi PI)" shouldEvalTo false
     }
 }

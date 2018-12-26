@@ -1,11 +1,11 @@
 package klisp
 
 import klisp.tty.TermColors
+import kotlinx.serialization.ImplicitReflectionSerializer
 
 fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
-val String.quoted: String get() = "\"$this\""
-fun Any.toQuotedString() = this.toString().quoted
 
+@ImplicitReflectionSerializer
 fun tryOrNil(f: () -> exp) = try {
     f()
 } catch (_: Throwable) {

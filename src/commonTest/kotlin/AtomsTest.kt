@@ -15,16 +15,18 @@ import klisp.ubyte
 import klisp.uint
 import klisp.ulong
 import klisp.ushort
+import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class AtomsTest {
     @Test
     fun bool() {
-        assertEquals(bool(true), _eval("true"), "true")
-        assertEquals(bool(false), _eval("false"), "false")
+        "true" shouldEvalTo true
+        "false" shouldEvalTo false
     }
 
     @Test

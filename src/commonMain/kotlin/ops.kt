@@ -1,11 +1,13 @@
 package klisp
 
+import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
 fun begin(args: exps): exp = args.last()
 
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun foldableMathOp(op: mathOp, args: exps): exp {
     require(args.isNotEmpty()) { "$op expects at least 1 argument" }
     val res = when {
@@ -98,6 +100,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
     }
 }
 
+@ImplicitReflectionSerializer
 fun compare(op: compareOp, args: exps): Boolean {
     require(args.size == 2) { "$op should have 2 arguments, got ${args.size}" }
     val (x, y) = args
@@ -114,6 +117,7 @@ fun compare(op: compareOp, args: exps): Boolean {
 }
 
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun isa(t: type, args: exps): exp {
     require(args.size == 1) { "$t? should have 1 argument, got ${args.size}" }
     val value = args.first()
@@ -151,12 +155,14 @@ fun isa(t: type, args: exps): exp {
     )
 }
 
+@ImplicitReflectionSerializer
 fun _is(args: exps): exp {
     require(args.size == 2) { "is? must have 2 arguments, got ${args.size}" }
     val (f, s) = args
     return bool(f === s)
 }
 
+@ImplicitReflectionSerializer
 fun eq(args: exps): exp {
     require(args.size == 2) { "eq? must have 2 arguments, got ${args.size}" }
     val (f, s) = args
@@ -164,6 +170,7 @@ fun eq(args: exps): exp {
 }
 
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun range(args: exps): collection {
     require(args.size == 2) { "range requires 2 arguments, got ${args.size}" }
     require(args.all { it is integer<*> }) { "range requires 2 integer arguments" }
@@ -175,6 +182,7 @@ fun range(args: exps): collection {
 
 @Suppress("USELESS_CAST") // needed for native target
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun lam(argNames: exp, body: exp, env: env): exp {
     require(argNames is _list) { "arguments should be a list" }
     argNames as _list
@@ -190,6 +198,7 @@ fun lam(argNames: exp, body: exp, env: env): exp {
 
 @ExperimentalUnsignedTypes
 @Suppress("USELESS_CAST") // needed for native target
+@ImplicitReflectionSerializer
 fun fmap(exp: exp, list: exp): exp {
     require(list is collection) { "second argument should be a collection" }
     list as collection
@@ -201,19 +210,22 @@ fun fmap(exp: exp, list: exp): exp {
 }
 
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun set(it: exps): exp = when {
     it.first() is list -> set((it.first() as list).toSet())
     else -> set(it.toSet())
 }
 
+@ImplicitReflectionSerializer
 fun json(args: exps): string {
     require(args.size == 1) { "json should have 1 argument, got ${args.size}" }
     require(args[0] is map) { "argument should be a map" }
     val map = args.first()
-    return string(map.serialize())
+    return string(map.toJson())
 }
 
 @ExperimentalUnsignedTypes
+@ImplicitReflectionSerializer
 fun map(it: exps): exp {
     val keys = it.filter { it is keyword }.map { it as keyword }
     val vals = it.filter { it !is keyword }
@@ -223,6 +235,7 @@ fun map(it: exps): exp {
 
 @ExperimentalUnsignedTypes
 @Suppress("USELESS_CAST") // needed for native target
+@ImplicitReflectionSerializer
 fun filter(exp: exp, list: exp): exp {
     require(list is collection) { "second argument should be a collection" }
     list as collection
@@ -236,6 +249,7 @@ fun filter(exp: exp, list: exp): exp {
 
 @ExperimentalUnsignedTypes
 @Suppress("USELESS_CAST") // needed for native target
+@ImplicitReflectionSerializer
 fun reduce(id: exp, exp: exp, list: exp): exp {
     require(list is collection) { "third argument should be a collection" }
     list as collection

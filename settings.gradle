@@ -7,6 +7,9 @@ pluginManagement {
             if (requested.id.id == "kotlinx-serialization") {
                 useModule("org.jetbrains.kotlin:kotlin-serialization:${requested.version}")
             }
+            if (requested.id.id == "kotlinx-serialization-native") {
+                useModule("org.jetbrains.kotlin:kotlin-serialization-native:${requested.version}")
+            }
         }
     }
 
@@ -14,4 +17,5 @@ pluginManagement {
         mavenCentral()
     }
 }
-//enableFeaturePreview('GRADLE_METADATA')
+
+enableFeaturePreview('GRADLE_METADATA')

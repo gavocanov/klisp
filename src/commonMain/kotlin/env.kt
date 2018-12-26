@@ -1,7 +1,9 @@
 package klisp
 
+import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.math.PI
 
+@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 val stdEnv: env = mutableMapOf(
         symbol("MAX_BYTE") to byte(Byte.MAX_VALUE),
@@ -21,13 +23,13 @@ val stdEnv: env = mutableMapOf(
         symbol("map") to func { map(it) },
         symbol("list") to func { list(it) },
         symbol("set") to func { set(it) },
-        symbol("head") to func { it -> (it.first() as list).first() },
-        symbol("first") to func { it -> (it.first() as list).first() },
-        symbol("last") to func { it -> (it.first() as list).last() },
-        symbol("car") to func { it -> (it.first() as list).first() },
-        symbol("tail") to func { it -> list((it.first() as list).drop(1)) },
-        symbol("rest") to func { it -> list((it.first() as list).drop(1)) },
-        symbol("cdr") to func { it -> list((it.first() as list).drop(1)) },
+        symbol("head") to func { it -> (it.first() as collection).first() },
+        symbol("first") to func { it -> (it.first() as collection).first() },
+        symbol("last") to func { it -> (it.first() as collection).last() },
+        symbol("car") to func { it -> (it.first() as collection).first() },
+        symbol("tail") to func { it -> list((it.first() as collection).drop(1)) },
+        symbol("rest") to func { it -> list((it.first() as collection).drop(1)) },
+        symbol("cdr") to func { it -> list((it.first() as collection).drop(1)) },
         symbol("^") to func { foldableMathOp(mathOp.pow, it) },
         symbol("pow") to func { foldableMathOp(mathOp.pow, it) },
         symbol("%") to func { foldableMathOp(mathOp.rem, it) },
