@@ -5,12 +5,10 @@ import klisp.int
 import klisp.long
 import klisp.short
 import klisp.ulong
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class MathTest {
     @Test

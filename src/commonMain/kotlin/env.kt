@@ -1,9 +1,7 @@
 package klisp
 
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.math.PI
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 val stdEnv: env = mutableMapOf(
         symbol("MAX_BYTE") to byte(Byte.MAX_VALUE),

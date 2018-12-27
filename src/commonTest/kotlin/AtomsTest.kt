@@ -15,12 +15,10 @@ import klisp.ubyte
 import klisp.uint
 import klisp.ulong
 import klisp.ushort
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class AtomsTest {
     @Test
@@ -88,13 +86,13 @@ class AtomsTest {
     fun list() = assertEquals(list(listOf(byte(1))), _eval("(list 1)"), "list")
 
     @Test
-    fun map() = assertEquals(map(listOf(keyword(":a"), byte(1))), _eval("(map :a 1)"), "map")
-
-    @Test
     fun keyword() = assertEquals(keyword(":a"), _eval(":a"), "keyword")
 
     @Test
     fun symbol() = assertEquals(double(PI), _eval("pi"), "symbol")
+
+    @Test
+    fun map() = assertEquals(map(listOf(keyword(":a"), byte(1))), _eval("(map :a 1)"), "map")
 
     @Test
     fun mix() {

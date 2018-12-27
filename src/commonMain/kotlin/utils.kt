@@ -1,11 +1,9 @@
 package klisp
 
 import klisp.tty.TermColors
-import kotlinx.serialization.ImplicitReflectionSerializer
 
 fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
 
-@ImplicitReflectionSerializer
 fun tryOrNil(f: () -> exp) = try {
     f()
 } catch (_: Throwable) {

@@ -1,7 +1,5 @@
 package klisp
 
-import kotlinx.serialization.ImplicitReflectionSerializer
-
 // split by space not contained in "", ''
 fun split(s: String): List<String> =
         "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'"
@@ -22,12 +20,10 @@ fun tokenize(s: String, dump: Boolean = false): List<String> {
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 fun parse(s: String): exp =
         readFromTokens(tokenize(s, DEBUG).toMutableList())
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 fun readFromTokens(tokens: MutableList<String>): exp {
     if (tokens.isEmpty()) return unit
     val token = tokens.first()
@@ -50,7 +46,6 @@ fun readFromTokens(tokens: MutableList<String>): exp {
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 fun parseAtom(s: String): atom = when {
     s.startsWith(':') -> keyword(s)
     s.startsWith('"') && s.endsWith('"') -> string(s)

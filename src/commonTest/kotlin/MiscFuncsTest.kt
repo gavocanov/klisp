@@ -1,10 +1,8 @@
 import klisp.byte
 import klisp.list
 import klisp.long
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class MiscFuncsTest {
     @Test

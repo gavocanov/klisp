@@ -1,9 +1,6 @@
 package klisp
 
-import kotlinx.serialization.ImplicitReflectionSerializer
-
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 fun eval(x: exp, env: env = stdEnv): exp {
     if (DEBUG) LOGGER.debug(":eval <$x>")
     return when {

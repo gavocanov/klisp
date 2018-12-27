@@ -1,7 +1,5 @@
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class ComparisonTest {
     @Test

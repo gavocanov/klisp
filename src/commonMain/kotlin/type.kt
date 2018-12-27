@@ -2,16 +2,13 @@
 
 package klisp
 
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.json.JSON
-import kotlinx.serialization.stringify
+import kotlinx.serialization.serializer
 
 typealias exps = List<exp>
 
-@UseExperimental(ImplicitReflectionSerializer::class)
 typealias env = MutableMap<symbol, exp>
 
-@UseExperimental(ImplicitReflectionSerializer::class)
 typealias kmap = Map<keyword, exp>
 
 data class ExitException(val msg: String) : Throwable(msg)
@@ -20,7 +17,6 @@ enum class compareOp { lte, lt, gte, gt, eq }
 
 enum class mathOp { plus, minus, div, mul, pow, rem, abs }
 
-@ImplicitReflectionSerializer
 enum class specialForm(val aliases: List<String>? = null) {
     // symbols
     DEBUG,
@@ -55,7 +51,6 @@ enum class specialForm(val aliases: List<String>? = null) {
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 enum class type(val constructor: ((s: String) -> exp)? = null,
                 val isNumber: Boolean = true) {
     _bool({ bool.from(it) }),
@@ -96,25 +91,22 @@ interface serializable {
     fun fromJson(s: String): atom
 }
 
-@ImplicitReflectionSerializer
 data class err(val msg: String?) : atom, serializable {
-    override fun toJson(): String = JSON.stringify(msg ?: "no message")
+    override fun toJson(): String = JSON.stringify(String.serializer(), msg ?: "no message")
     override fun fromJson(s: String): err = err(s)
     override var meta: exp? = null
     override fun toString(): String = ":error\n${msg ?: "unknown error"}"
 }
 
-@ImplicitReflectionSerializer
 object nil : atom, serializable {
-    override fun toJson(): String = JSON.stringify("nil")
+    override fun toJson(): String = JSON.stringify(String.serializer(), "nil")
     override fun fromJson(s: String): nil = this
     override var meta: exp? = null
     override fun toString(): String = ":nil"
 }
 
-@ImplicitReflectionSerializer
 object unit : atom {
-    override fun toJson(): String = JSON.stringify("unit")
+    override fun toJson(): String = JSON.stringify(String.serializer(), "unit")
     override fun fromJson(s: String): atom = this
     override var meta: exp? = null
     override fun toString(): String = ":unit"
@@ -131,26 +123,22 @@ sealed class scalar : atom, serializable {
     override var meta: exp? = null
 }
 
-@ImplicitReflectionSerializer
 sealed class number<out T : Number>(val numericValue: T) : scalar(), serializable {
     open val asDouble: Double by lazy { numericValue.toDouble() }
     override fun toString(): String = ":number(${numericValue::class.simpleName}) $numericValue"
 }
 
-@ImplicitReflectionSerializer
 sealed class integer<T : Number>(val integerValue: T) : number<T>(integerValue) {
     val asLong: Long by lazy { integerValue.toLong() }
     override fun toString(): String = ":integer(${integerValue::class.simpleName}) $integerValue"
 }
 
-@ImplicitReflectionSerializer
 sealed class decimal<T : Number>(private val decimalValue: T) : number<T>(decimalValue) {
     override val asDouble: Double by lazy { decimalValue.toDouble() }
     override fun toString(): String = ":decimal(${decimalValue::class.simpleName}) $decimalValue"
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 sealed class collection(protected open val value: Collection<exp>) : atom, serializable, Collection<exp> by value {
     override fun toJson(): String = "[${value.joinToString(",", transform = exp::toJson)}]"
     override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseAtom(it) } as atom
@@ -159,7 +147,6 @@ sealed class collection(protected open val value: Collection<exp>) : atom, seria
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 data class list(override val value: exps) : collection(value), exps by value {
     override val size: Int = value.size
     override fun contains(element: exp): Boolean = value.contains(element)
@@ -171,7 +158,6 @@ data class list(override val value: exps) : collection(value), exps by value {
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 data class set(override val value: Set<exp>) : collection(value), Set<exp> by value {
     override val size: Int = value.size
     override fun contains(element: exp): Boolean = value.contains(element)
@@ -182,7 +168,6 @@ data class set(override val value: Set<exp>) : collection(value), Set<exp> by va
     operator fun get(index: Int): exp = value.toList()[index]
 }
 
-@ImplicitReflectionSerializer
 data class map(private val value: kmap) : atom, kmap by value, serializable {
     override fun toJson(): String = "{${value.map { (k, v) -> "${k.toJson()}:${v.toJson()}" }.joinToString(",")}}"
     override fun fromJson(s: String): map = throw NotImplementedError()
@@ -212,36 +197,31 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
     }
 }
 
-@ImplicitReflectionSerializer
 data class char(val value: Char) : scalar() {
-    override fun toJson(): String = JSON.stringify(value.toString())
+    override fun toJson(): String = JSON.stringify(String.serializer(), value.toString())
     override fun fromJson(s: String): atom = char(s.first())
     override fun toString(): String = ":char $value"
 }
 
-@ImplicitReflectionSerializer
 data class string(val value: String) : scalar() {
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(String.serializer(), value)
     override fun fromJson(s: String): atom = string(s)
     override fun toString(): String = ":string $value"
 }
 
-@ImplicitReflectionSerializer
 data class symbol(val value: String) : scalar() {
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(String.serializer(), value)
     override fun fromJson(s: String): atom = symbol(s)
     override fun toString(): String = ":symbol $value"
 }
 
-@ImplicitReflectionSerializer
 data class keyword(val value: String) : atom, serializable {
-    override fun toJson(): String = JSON.stringify(value.substringAfter(':'))
+    override fun toJson(): String = JSON.stringify(String.serializer(), value.substringAfter(':'))
     override fun fromJson(s: String): keyword = keyword(":$s")
     override var meta: exp? = null
     override fun toString(): String = ":keyword $value"
 }
 
-@ImplicitReflectionSerializer
 data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
     companion object {
         fun from(s: String): exp = when {
@@ -251,56 +231,51 @@ data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
         }
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Boolean.serializer(), value)
     override fun fromJson(s: String): atom = bool(s.toBoolean())
     override fun toString(): String = ":bool $value"
 }
 
-@ImplicitReflectionSerializer
 data class byte(val value: Byte) : integer<Byte>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil { byte(s.toByte()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Byte.serializer(), value)
     override fun fromJson(s: String): atom = byte(s.toByte())
     override fun toString(): String = ":byte $value"
 }
 
-@ImplicitReflectionSerializer
 data class short(val value: Short) : integer<Short>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil { short(s.toShort()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Short.serializer(), value)
     override fun fromJson(s: String): atom = short(s.toShort())
     override fun toString(): String = ":short $value"
 }
 
-@ImplicitReflectionSerializer
 data class int(val value: Int) : integer<Int>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil { int(s.toInt()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Int.serializer(), value)
     override fun fromJson(s: String): atom = int(s.toInt())
     override fun toString(): String = ":int $value"
 }
 
-@ImplicitReflectionSerializer
 data class long(val value: Long) : integer<Long>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil { long(s.toLong()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Long.serializer(), value)
     override fun fromJson(s: String): atom = long(s.toLong())
     override fun toString(): String = ":long $value"
 }
 
-@ImplicitReflectionSerializer
 data class float(val value: Float) : decimal<Float>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil {
@@ -314,13 +289,12 @@ data class float(val value: Float) : decimal<Float>(value) {
         }
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Float.serializer(), value)
     override fun fromJson(s: String): atom = float(s.toFloat())
     override fun toString(): String = ":float $value"
 }
 
 @ExperimentalUnsignedTypes
-@ImplicitReflectionSerializer
 data class double(val value: Double) : decimal<Double>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil {
@@ -333,48 +307,44 @@ data class double(val value: Double) : decimal<Double>(value) {
         fun from(num: ULong) = double.from("$num")
     }
 
-    override fun toJson(): String = JSON.stringify(value)
+    override fun toJson(): String = JSON.stringify(Double.serializer(), value)
     override fun fromJson(s: String): atom = double(s.toDouble())
     override fun toString(): String = ":double $value"
 }
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
     companion object {
         fun from(s: String): exp = tryOrNil { ubyte(s.toUByte()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value.toShort())
+    override fun toJson(): String = JSON.stringify(Short.serializer(), value.toShort())
     override fun fromJson(s: String): atom = ubyte(s.toUByte())
     override fun toString(): String = ":ubyte $value"
 }
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
     companion object {
         fun from(s: String): exp = tryOrNil { ushort(s.toUShort()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value.toInt())
+    override fun toJson(): String = JSON.stringify(Int.serializer(), value.toInt())
     override fun fromJson(s: String): atom = ushort(s.toUShort())
     override fun toString(): String = ":ushort $value"
 }
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 data class uint(val value: UInt) : integer<Long>(value.toLong()) {
     companion object {
         fun from(s: String): exp = tryOrNil { uint(s.toUInt()) }
     }
 
-    override fun toJson(): String = JSON.stringify(value.toLong())
+    override fun toJson(): String = JSON.stringify(Long.serializer(), value.toLong())
     override fun fromJson(s: String): atom = uint(s.toUInt())
     override fun toString(): String = ":uint $value"
 }
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 data class ulong(val value: ULong) : decimal<Double>(value.toString().toDouble()) {
     companion object {
@@ -382,7 +352,7 @@ data class ulong(val value: ULong) : decimal<Double>(value.toString().toDouble()
         fun from(number: Number) = ulong(number.toString().toULong())
     }
 
-    override fun toJson(): String = JSON.stringify(value.toString().toFloat())
+    override fun toJson(): String = JSON.stringify(Float.serializer(), value.toString().toFloat())
     override fun fromJson(s: String): atom = ulong(s.toULong())
     override fun toString(): String = ":ulong $value"
 }

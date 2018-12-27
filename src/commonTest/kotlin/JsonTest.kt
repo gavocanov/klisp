@@ -11,12 +11,11 @@ import klisp.ubyte
 import klisp.uint
 import klisp.ulong
 import klisp.ushort
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.json.JSON
-import kotlinx.serialization.stringify
+import kotlinx.serialization.list
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class JsonTest {
     @Test
@@ -42,8 +41,8 @@ class JsonTest {
         "[1]" shouldEqual _eval("(set 1)").toJson()
         "[true,false]" shouldEqual _eval("(list true false)").toJson()
         "[true,false]" shouldEqual _eval("(set true false)").toJson()
-        JSON.stringify(listOf(JSON.stringify("a"), "a")) shouldEqual _eval("(list \"a\" 'a')").toJson()
-        JSON.stringify(listOf(JSON.stringify("a"), "a")) shouldEqual _eval("(set \"a\" 'a')").toJson()
+        JSON.stringify(String.serializer().list, listOf(JSON.stringify(String.serializer(), "a"), "a")) shouldEqual _eval("(list \"a\" 'a')").toJson()
+        JSON.stringify(String.serializer().list, listOf(JSON.stringify(String.serializer(), "a"), "a")) shouldEqual _eval("(set \"a\" 'a')").toJson()
     }
 
     @Test
@@ -60,8 +59,8 @@ class JsonTest {
 
     @Test
     fun `strings to json`() {
-        JSON.stringify("\"1\"") shouldEqual _eval("\"1\"").toJson()
-        JSON.stringify("\"i love my 'shoes'\"") shouldEqual _eval(""" "i love my 'shoes'" """).toJson()
+        JSON.stringify(String.serializer(), "\"1\"") shouldEqual _eval("\"1\"").toJson()
+        JSON.stringify(String.serializer(), "\"i love my 'shoes'\"") shouldEqual _eval(""" "i love my 'shoes'" """).toJson()
         // TODO
 //        JSON.stringify(""""bu""") shouldEqual _eval(""" ""bu" """).toJson()
     }

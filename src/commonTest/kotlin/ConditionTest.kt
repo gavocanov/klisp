@@ -2,10 +2,8 @@ import klisp.byte
 import klisp.double
 import klisp.long
 import klisp.unit
-import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
 
-@ImplicitReflectionSerializer
 @ExperimentalUnsignedTypes
 class ConditionTest {
     @Test
