@@ -20,8 +20,12 @@ fun tokenize(s: String, dump: Boolean = false): List<String> {
 }
 
 @ExperimentalUnsignedTypes
-fun parse(s: String): exp =
-        readFromTokens(tokenize(s, DEBUG).toMutableList())
+fun parse(s: String): exp {
+    val balance = s.hasBalancedRoundBrackets()
+    if (balance.nok)
+        throw IllegalArgumentException("unbalanced brackets <left: ${balance.left}, right: ${balance.right}>")
+    return readFromTokens(tokenize(s, DEBUG).toMutableList())
+}
 
 @ExperimentalUnsignedTypes
 fun readFromTokens(tokens: MutableList<String>): exp {

@@ -8,7 +8,7 @@ Native is tested/setup only for MacOS using [linenoise](https://github.com/antir
 Jvm version is using [JLine](https://github.com/jline/jline3) for readline.
 
 Source code for console colors is included (because I'm too lazy for a proper multiplatform PR :/)
-from the excelent [mordant](https://github.com/ajalt/mordant) and [colormath](https://github.com/ajalt/colormath) libs,
+from the excellent [mordant](https://github.com/ajalt/mordant) and [colormath](https://github.com/ajalt/colormath) libs,
 originally only for JVM.
 
 ## build
