@@ -212,7 +212,7 @@ fun lex(args: exps): string {
     require(args.size == 1) { "lex should have 1 argument, got ${args.size}" }
     require(args[0] is string) { "argument should be a string" }
     val s = args.first() as string
-    val stream = LiveStream(s.value)
+    val stream = LiveStream(s.value.drop(1).dropLast(1))
     val lexer = KLLexer()
     lexer.lex(stream)
     return string(lexer.output.toString())

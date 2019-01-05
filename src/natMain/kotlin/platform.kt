@@ -56,3 +56,47 @@ actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap
                                               private val fn: (I) -> O) : (I) -> O {
     override fun invoke(p1: I): O = fn(p1)
 }
+
+actual class SortedSet<T : Comparable<T>> : Set<T> {
+    private val lst: List<T>
+
+    actual constructor(from: T) {
+        lst = listOf(from).sorted()
+    }
+
+    actual constructor(from: Collection<T>) {
+        lst = from.sorted()
+    }
+
+    actual constructor() {
+        lst = emptyList()
+    }
+
+    override val size: Int get() = lst.size
+    override fun contains(element: T): Boolean = lst.binarySearch(element) != -1
+    override fun containsAll(elements: Collection<T>): Boolean = elements.all(::contains)
+    override fun isEmpty(): Boolean = lst.isEmpty()
+    override fun iterator(): Iterator<T> = lst.iterator()
+}
+
+actual class Queue<T> actual constructor() : IQueue<T> {
+    private val q: ArrayList<T> = arrayListOf()
+
+    override val isEmpty: Boolean get() = q.isEmpty()
+
+    override fun dequeue(): T = if (!isEmpty)
+        q.removeAt(0)
+    else
+        throw NoSuchElementException("queue is empty")
+
+    override operator fun plusAssign(items: Iterable<T>) {
+        q.addAll(items)
+    }
+
+    override operator fun plusAssign(a: T) {
+        q.add(a)
+    }
+
+    override fun toString(): String = q.toString()
+}
+
