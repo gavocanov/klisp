@@ -129,6 +129,29 @@ data class LiveStream<A>(val source: LiveStreamSource<A>) {
     override fun toString(): String = when {
         isEmpty -> "LiveNil()"
         isPlugged -> "LivePlug()"
-        else -> "${head()} :~: ${tail()}"
+        else -> "${head()} |~| ${tail()}"
     }
+}
+
+/**
+ * Pattern matches the current last element of a live stream.
+ */
+object LivePlug {
+    operator fun <A> invoke(stream: LiveStream<A>): Boolean = stream.isPlugged
+}
+
+/**
+ * Pattern matches the end of a (terminated) live stream.
+ */
+object LiveNil {
+    operator fun <A> invoke(stream: LiveStream<A>): Boolean = stream.isEmpty
+}
+
+/**
+ * Pattern matches an element and its tail in a live stream.
+ */
+object `|~|` {
+    infix fun <A> apply(stream: LiveStream<A>): Pair<A?, LiveStream<A>?> =
+            if (stream.isPlugged) null to null
+            else stream.head() to stream.tail()
 }

@@ -495,3 +495,161 @@ data class Derivative(private val base: GenericPattern, private val c: TokenTag)
         return true
     }
 }
+
+/**
+ * Parsing markers are special tokens that appear in parse strings, but not in input strings.
+ *
+ * The parsing machine converts streams of tokens into lists of tokens containing these markers.
+ *
+ * The markers indicate the structure of the parse.
+ */
+abstract class ParsingMark : Token() {
+    override val isParsingMarker = true
+    override val tag: ParsingMark get() = this
+}
+
+/**
+ * A "hard" empty string (a hard epsilon) is a parsing marker inserted
+ * into a parse string to indicate that the original context-free
+ * grammar called for parsing the empty string.
+ */
+object HardEps : ParsingMark() {
+    override fun localCompare(other: Token): Int = 0
+    override fun toString() = "[e]"
+    override fun hashCode() = 3
+}
+
+/**
+ * An open reduction marker in a parse string indicates that opening of
+ * a new node in the parse tree.
+ *
+ * @param f  the function to construct the tree node from its leaves.
+ * @param id the unique id of this reduction rule.
+ */
+data class OpenRed(private val f: (Any) -> Any, private val id: Int) : ParsingMark() {
+    override fun localCompare(other: Token): Int {
+        other as OpenRed
+        return id.compareTo(other.id)
+    }
+
+    override fun equals(other: Any?): Boolean =
+            if (other is OpenRed) id == other.id
+            else false
+
+    override fun hashCode(): Int = f.hashCode()
+    override fun toString(): String = "<${f.hashCode()}|"
+}
+
+/**
+ * A close reduction parsing marker in a parse string indicates the
+ * end of a node in the parse tree.
+ *
+ * Open/close reduction markers match like balanced parentheses in a
+ * correct parse string.
+ */
+data class CloseRed(private val f: (Any) -> Any, private val id: Int) : ParsingMark() {
+    override fun localCompare(other: Token): Int {
+        other as CloseRed
+        return id.compareTo(other.id)
+    }
+
+    override fun equals(other: Any?): Boolean =
+            if (other is CloseRed) id == other.id
+            else false
+
+    override fun hashCode(): Int = f.hashCode()
+    override fun toString(): String = "|${f.hashCode()}>"
+}
+
+/**
+ * Open/close repetition parsing markers indicate that the nodes between should be converted into a list.
+ */
+object OpenRep : ParsingMark() {
+    override fun localCompare(other: Token): Int = 0
+    override fun hashCode(): Int = 1
+    override fun toString(): String = "<*|"
+}
+
+/**
+ * Open/close repetition parsing markers indicate that the nodes between should be converted into a list.
+ */
+object CloseRep : ParsingMark() {
+    override fun localCompare(other: Token): Int = 0
+    override fun hashCode(): Int = 2
+    override fun toString(): String = "|*>"
+}
+
+/**
+ * Open/close option parsing markers indicate that the node between (if
+ * any) should be converted to an <code>Option</code>.
+ */
+object OpenOpt : ParsingMark() {
+    override fun localCompare(other: Token): Int = 0
+    override fun hashCode(): Int = 1
+    override fun toString(): String = "<?|"
+}
+
+/**
+ * Open/close option parsing markers indicate that the node between (if
+ * any) should be converted to an <code>Option</code>.
+ */
+object CloseOpt : ParsingMark() {
+    override fun localCompare(other: Token): Int = 0
+    override fun hashCode(): Int = 2
+    override fun toString(): String = "|?>"
+}
+
+/**
+ * A parsing state is a node in the graph explored by a parsing machine.
+ *
+ * A parsing state indicates a partially parsed input.
+ *
+ * @param lang  the pattern meant to match the remaining input.
+ * @param parse the parse string constructed thus far.
+ * @param input the remaining input.
+ */
+data class ParsingState<T : Token>(private val lang: Pattern,
+                                   private val parse: List<Token>,
+                                   private val input: LiveStream<T>) {
+
+    private val firstMarks: Set<ParsingMark>
+        get() {
+            val first = lang.first
+            val tokens = first.filter(TokenPattern::isParsingMarker)
+            return tokens.map { it.tag as ParsingMark }.toSet()
+        }
+
+    /**
+     * @return true iff this state can consume a parsing marker.
+     */
+    val hasMarks get() = firstMarks.isNotEmpty()
+
+    /**
+     * @return true iff the input consumed thus far is a legal parse.
+     */
+    val isFinal get() = lang.nullable
+
+    /**
+     * @return true iff the input stream in this state is ready to make progress.
+     */
+    val canConsume: Boolean get() = !input.isPlugged && !lang.empty
+
+    /**
+     * @return the state that results from consuming the head of the input, if any.
+     */
+    val nextConsume: ParsingState<T>?
+        get() {
+            val (c, rest) = `|~|` apply input
+            return when {
+                c !== null && rest !== null -> {
+                    val newLang = lang derive c.tag
+                    val newParseString: List<Token> = c cons parse
+                    if (!newLang.empty) ParsingState(newLang, newParseString, rest)
+                    else null
+                }
+                LiveNil(input) -> throw IllegalStateException("can't consume -- end of input")
+                LivePlug(input) -> throw IllegalStateException("can't consume on a plugged stream")
+                else -> throw IllegalStateException("this should not be")
+            }
+        }
+}

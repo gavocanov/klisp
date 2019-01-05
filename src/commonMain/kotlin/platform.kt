@@ -19,15 +19,13 @@ expect class Memoize<I, O>(backingMap: MutableMap<I, O>, fn: (I) -> O) : (I) -> 
 interface IQueue<T> {
     val isEmpty: Boolean
     fun dequeue(): T
-
     operator fun plusAssign(items: Iterable<T>)
-
     operator fun plusAssign(a: T)
 }
 
-expect class Queue<T>(): IQueue<T>
+expect class Queue<T>() : IQueue<T>
 
-expect class SortedSet<T : Comparable<T>>(from: Collection<T>) : Set<T> {
+expect class SortedSet<T : Comparable<T>>() : Set<T> {
+    constructor(from: Collection<T>)
     constructor(from: T)
-    constructor()
 }
