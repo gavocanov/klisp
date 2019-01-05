@@ -49,3 +49,10 @@ actual object Platform {
     actual fun console(): Boolean = true
 }
 
+/**
+ * Not supported for now in native, throws "mutation attempt of frozen kotlin.collections.HashMap"
+ */
+actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap<I, O>,
+                                              private val fn: (I) -> O) : (I) -> O {
+    override fun invoke(p1: I): O = fn(p1)
+}

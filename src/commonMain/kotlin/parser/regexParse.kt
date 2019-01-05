@@ -1,12 +1,25 @@
-package klisp
+package klisp.parser
 
+import klisp.DEBUG
+import klisp.LOGGER
+import klisp._list
+import klisp.atom
+import klisp.char
+import klisp.exp
+import klisp.keyword
+import klisp.nil
+import klisp.nok
+import klisp.string
+import klisp.symbol
+import klisp.type
+import klisp.unit
+
+val notStringRe = "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'".toRegex()
 // split by space not contained in "", ''
-fun split(s: String): List<String> =
-        "[^\\s\"']+|\"([^\"]*)\"|'([^']*)'"
-                .toRegex()
-                .findAll(s)
-                .map { it.value }
-                .toList()
+fun split(s: String): List<String> = notStringRe
+        .findAll(s)
+        .map { it.value }
+        .toList()
 
 fun tokenize(s: String, dump: Boolean = false): List<String> {
     val parsed = s

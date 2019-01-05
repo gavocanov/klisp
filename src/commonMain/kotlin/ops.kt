@@ -1,5 +1,7 @@
 package klisp
 
+import klisp.parser.derivative.LiveStream
+import klisp.parser.derivative.klisp.KLLexer
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
@@ -204,6 +206,16 @@ fun fmap(exp: exp, list: exp): exp {
 fun set(it: exps): exp = when {
     it.first() is list -> set((it.first() as list).toSet())
     else -> set(it.toSet())
+}
+
+fun lex(args: exps): string {
+    require(args.size == 1) { "lex should have 1 argument, got ${args.size}" }
+    require(args[0] is string) { "argument should be a string" }
+    val s = args.first() as string
+    val stream = LiveStream(s.value)
+    val lexer = KLLexer()
+    lexer.lex(stream)
+    return string(lexer.output.toString())
 }
 
 fun json(args: exps): string {

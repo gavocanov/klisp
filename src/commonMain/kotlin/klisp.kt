@@ -1,5 +1,7 @@
 package klisp
 
+import klisp.parser.parse
+
 var PROFILE = false
 var DEBUG = false
 const val HISTORY_FILE_NAME = ".kl_history"

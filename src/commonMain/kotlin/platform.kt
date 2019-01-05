@@ -13,3 +13,6 @@ expect object Platform {
     fun version(): String
     fun strFormat(d: Double): String
 }
+
+expect class Memoize<I, O>(backingMap: MutableMap<I, O>, fn: (I) -> O) : (I) -> O
+

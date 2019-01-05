@@ -84,3 +84,7 @@ actual object Platform {
     actual fun console(): Boolean = System.console() !== null
 }
 
+actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap<I, O>,
+                                              private val fn: (I) -> O) : (I) -> O {
+    override fun invoke(i: I): O = backingMap.getOrPut(i) { fn(i) }
+}

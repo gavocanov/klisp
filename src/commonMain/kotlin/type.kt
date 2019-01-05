@@ -2,6 +2,7 @@
 
 package klisp
 
+import klisp.parser.parseAtom
 import kotlinx.serialization.json.JSON
 import kotlinx.serialization.serializer
 

@@ -70,6 +70,7 @@ val stdEnv: env = mutableMapOf(
         symbol("is?") to func { _is(it) },
         symbol("json") to func { json(it) },
         symbol("eq?") to func { eq(it) },
-        symbol("equal?") to func { eq(it) }
+        symbol("equal?") to func { eq(it) },
+        symbol("lex") to func { lex(it) }
 ).also { it.map { (k, v) -> v.meta = k } }
 

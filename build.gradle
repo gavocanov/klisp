@@ -4,14 +4,17 @@ buildscript {
     ext.serialization_version = '0.9.1'
     ext.jline_version = '3.9.0'
     ext.shadow_version = '2.0.1'
+    ext.atomicfu_version = '0.12.0'
 
     repositories {
         jcenter()
         maven { url "https://kotlin.bintray.com/kotlinx" }
+        maven { url 'https://dl.bintray.com/jetbrains/kotlin-native-dependencies' }
     }
 
     dependencies {
         classpath "com.github.jengelman.gradle.plugins:shadow:$shadow_version"
+        classpath "org.jetbrains.kotlinx:atomicfu-gradle-plugin:$atomicfu_version"
     }
 }
 
@@ -24,6 +27,7 @@ repositories {
     jcenter()
     mavenCentral()
     maven { url "https://kotlin.bintray.com/kotlinx" }
+    maven { url 'https://dl.bintray.com/jetbrains/kotlin-native-dependencies' }
 }
 
 kotlin {
@@ -55,6 +59,7 @@ kotlin {
             dependencies {
                 implementation 'org.jetbrains.kotlin:kotlin-stdlib-common'
                 implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime-common:$serialization_version"
+                implementation "org.jetbrains.kotlinx:atomicfu:$atomicfu_version"
             }
         }
 
@@ -71,6 +76,7 @@ kotlin {
                 implementation 'org.jetbrains.kotlin:kotlin-reflect'
                 implementation "org.jline:jline:$jline_version"
                 implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$serialization_version"
+                implementation "org.jetbrains.kotlinx:atomicfu:$atomicfu_version"
             }
         }
 
@@ -78,12 +84,14 @@ kotlin {
             dependencies {
                 implementation 'org.jetbrains.kotlin:kotlin-test'
                 implementation 'org.jetbrains.kotlin:kotlin-test-junit'
+                implementation "org.jetbrains.kotlinx:atomicfu:$atomicfu_version"
             }
         }
 
         natMain {
             dependencies {
                 implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime-native:$serialization_version"
+                implementation "org.jetbrains.kotlinx:atomicfu-native:$atomicfu_version"
             }
         }
 

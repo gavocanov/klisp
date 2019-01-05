@@ -1,7 +1,10 @@
+import klisp.parser.PP
 import klisp.bool
 import klisp.eval
 import klisp.exp
-import klisp.parse
+import klisp.parser.hasBalancedPairOf
+import klisp.ok
+import klisp.parser.parse
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -32,3 +35,5 @@ infix fun String.shouldNotBe(b: Boolean) = assertNotEquals(b, (_eval(this) as bo
 infix fun String.shouldBeA(clazz: KClass<*>) = assertEquals(clazz, _eval(this)::class, this)
 
 infix fun String.shouldEqual(s: String) = assertEquals(this, s, "$this equals $s")
+infix fun String.shouldHaveBalanced(p: PP) = assertEquals(true, this.hasBalancedPairOf(p).ok, "$this has balanced $p")
+infix fun String.shouldNotHaveBalanced(p: PP) = assertNotEquals(true, this.hasBalancedPairOf(p).ok, "$this does not have balanced $p")

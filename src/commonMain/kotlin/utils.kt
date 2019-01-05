@@ -12,10 +12,34 @@ fun tryOrNil(f: () -> exp) = try {
     nil
 }
 
+typealias Result<T> = Pair<Boolean, T>
+
+val Result<*>.ok: Boolean get() = first
+val Result<*>.nok: Boolean get() = !first
+val <T> Result<T>.data: T get() = second
+
+val <T> List<T>.reversed: List<T> get() = this.asReversed()
+
+infix fun <T> Set<T>.subsetOf(other: Set<T>) = other.containsAll(this)
+
+val <T> Iterable<T>.first: T get() = first()
+val <T> Iterable<T>.last: T get() = last()
+val <T> Iterable<T>.rest: List<T> get() = drop(1)
+val <T> Iterable<T>.head: T get() = first()
+val <T> Iterable<T>.tail: List<T> get() = drop(1)
+
+val String.first: Char get() = first()
+val String.last: Char get() = last()
+val String.rest: String get() = substring(1)
+val String.head: Char get() = first()
+val String.tail: String get() = substring(1)
+
+fun <T> T.toListOf(): List<T> = listOf(this)
+infix fun <T> T.cons(list: Iterable<T>): List<T> = listOf(this) + list.asSequence()
+
 /**
  * split by space not contained in "", '', [] and {}
  */
-@Suppress("unused")
 fun splitNotSurrounded(s: String): List<String> =
         "[^\\s\"'{\\[]+|\"([^\"]*)\"|'([^']*)'|\\{([^{]*)}|\\[([^\\[]*)]"
                 .toRegex()
@@ -54,71 +78,46 @@ class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     override fun remove(key: K): V? = innerMap.remove(key)
 }
 
-/**
- * monoidal parsing from Edward Kmett (in haskell)
- * https://www.youtube.com/watch?v=Txf7swrcLYs&t=661s
- */
-private typealias B = Pair<Int, Int>
+class SortedSet<T : Comparable<T>> : Set<T> {
+    private val lst: List<T>
 
-private typealias PP = Pair<Char, Char>
-
-typealias Result<T> = Pair<Boolean, T>
-
-/**
- * semigroup for B
- */
-private operator fun B.plus(that: B): B {
-    val (l1, r1) = this
-    val (l2, r2) = that
-    return when {
-        r1 <= l2 -> B(l1 + l2 - r1, r2)
-        else -> B(l1, r2 + r1 - l2)
+    constructor(v: T) {
+        lst = listOf(v).sorted()
     }
-}
 
-/**
- * first in right bracket, second is left bracket
- * ie. inverted from what you'd imagine
- */
-private fun parseBalanced(c: Char, p: PP): B {
-    require(p.first != p.second) { "first and second can't be the same $p" }
-    return when (c) {
-        p.first -> B(0, 1)
-        p.second -> B(1, 0)
-        else -> B(0, 0)
+    constructor(c: Collection<T>) {
+        lst = c.sorted()
     }
+
+    constructor() {
+        lst = emptyList()
+    }
+
+    override val size: Int get() = lst.size
+    override fun contains(element: T): Boolean = lst.binarySearch(element) != -1
+    override fun containsAll(elements: Collection<T>): Boolean = elements.all(::contains)
+    override fun isEmpty(): Boolean = lst.isEmpty()
+    override fun iterator(): Iterator<T> = lst.iterator()
 }
 
-private fun addBalance(a: B, c: Char, p: PP): B =
-        a + parseBalanced(c, p)
+class Queue<T> {
+    private val q: ArrayList<T> = arrayListOf()
 
-private fun addBalanceRound(a: B, c: Char) = addBalance(a, c, '(' to ')')
-private fun addBalanceSquare(a: B, c: Char) = addBalance(a, c, '[' to ']')
-private fun addBalanceCurly(a: B, c: Char) = addBalance(a, c, '[' to ']')
+    val isEmpty: Boolean get() = q.isEmpty()
 
-fun String.hasBalancedRoundBrackets(): Result<B> {
-    val res = this.fold(B(0, 0), ::addBalanceRound)
-    return (res == B(0, 0)) to res
+    fun dequeue(): T = if (!isEmpty)
+        q.removeAt(0)
+    else
+        throw NoSuchElementException("queue is empty")
+
+    operator fun plusAssign(items: Iterable<T>) {
+        q.addAll(items)
+    }
+
+    operator fun plusAssign(a: T) {
+        q.add(a)
+    }
+
+    override fun toString(): String = q.toString()
 }
 
-fun String.hasBalancedSquareBrackets(): Result<B> {
-    val res = this.fold(B(0, 0), ::addBalanceSquare)
-    return (res == B(0, 0)) to res
-}
-
-fun String.hasBalancedCurlyBrackets(): Result<B> {
-    val res = this.fold(B(0, 0), ::addBalanceCurly)
-    return (res == B(0, 0)) to res
-}
-
-fun String.hasBalancedPairOf(p: PP): Result<B> {
-    val res = this.fold(B(0, 0)) { a, n -> addBalance(a, n, p) }
-    return (res == B(0, 0)) to res
-}
-
-val Result<*>.ok: Boolean get() = this.first
-val Result<*>.nok: Boolean get() = !this.first
-val <T> Result<T>.data: T get() = this.second
-
-val Result<B>.left: Int get() = this.data.second
-val Result<B>.right: Int get() = this.data.first
