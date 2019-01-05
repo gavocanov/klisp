@@ -1,6 +1,15 @@
 pluginManagement {
     resolutionStrategy {
         eachPlugin {
+            if (requested.id.id == "com.peterabeles.gversion") {
+                useModule("gradle.plugin.com.peterabeles.gversion:gversion-plugin:${requested.version}")
+            }
+            if (requested.id.id == "com.github.johnrengelman.shadow") {
+                useModule("com.github.jengelman.gradle.plugins:shadow:${requested.version}")
+            }
+            if (requested.id.id == "com.gradle.build-scan") {
+                useModule("com.gradle:build-scan-plugin:${requested.version}")
+            }
             if (requested.id.id == "kotlin-multiplatform") {
                 useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:${requested.version}")
             }
@@ -14,8 +23,18 @@ pluginManagement {
     }
 
     repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        jcenter()
         mavenCentral()
     }
 }
 
 enableFeaturePreview('GRADLE_METADATA')
+
+buildCache {
+    local(DirectoryBuildCache) {
+        directory = new File(rootDir, 'gradle-build-cache')
+        removeUnusedEntriesAfterDays = 10
+    }
+}
+

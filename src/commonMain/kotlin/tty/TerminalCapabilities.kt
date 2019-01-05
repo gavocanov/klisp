@@ -1,6 +1,6 @@
 package klisp.tty
 
-import klisp.Platform
+import klisp.expected.Platform
 import klisp.tty.TermColors.Level.ANSI16
 import klisp.tty.TermColors.Level.ANSI256
 import klisp.tty.TermColors.Level.NONE

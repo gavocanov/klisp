@@ -1,4 +1,9 @@
 .gradle/
 .idea/
 build/
+gradle/
+gradle-build-cache/
+gradlew*
 hotspot*
+*.iml
+

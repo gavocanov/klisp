@@ -22,9 +22,9 @@ originally only for JVM.
 
 ## run
 
-* jvm - ```kotlin build/libs/klisp.jar```
-* native release - ```build/bin/nat/main/release/executable/klisp.kexe```
-* native debug - ```build/bin/nat/main/debug/executable/klisp.kexe```
+* jvm - ```kotlin build/libs/klisp-0.0.1.jar```
+* native release - ```build/bin/nat/mainReleaseExecutable/main.kexe```
+* native debug - ```build/bin/nat/mainDebugExecutable/main.kexe```
 
 ## debug/develop
 I'm using Intellij IDEA for the jvm target and Intellij CLion for the native target, for both debug/run works really 

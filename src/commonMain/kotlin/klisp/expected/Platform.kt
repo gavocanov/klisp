@@ -1,4 +1,4 @@
-package klisp
+package klisp.expected
 
 expect object Platform {
     fun getenv(s: String): String?
@@ -10,6 +10,6 @@ expect object Platform {
     fun readLine(prompt: String): String?
     fun exit(c: Int)
     fun getTimeNanos(): Long
-    fun version(): String
+    fun platformId(): String
     fun strFormat(d: Double): String
 }

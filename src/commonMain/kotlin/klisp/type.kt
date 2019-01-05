@@ -2,7 +2,9 @@
 
 package klisp
 
-import kotlinx.serialization.json.JSON
+import klisp.expected.Platform
+import klisp.parser.parseStringAtom
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 typealias exps = List<exp>
@@ -92,21 +94,21 @@ interface serializable {
 }
 
 data class err(val msg: String?) : atom, serializable {
-    override fun toJson(): String = JSON.stringify(String.serializer(), msg ?: "no message")
+    override fun toJson(): String = Json.stringify(String.serializer(), msg ?: "no message")
     override fun fromJson(s: String): err = err(s)
     override var meta: exp? = null
     override fun toString(): String = ":error\n${msg ?: "unknown error"}"
 }
 
 object nil : atom, serializable {
-    override fun toJson(): String = JSON.stringify(String.serializer(), "nil")
+    override fun toJson(): String = Json.stringify(String.serializer(), "nil")
     override fun fromJson(s: String): nil = this
     override var meta: exp? = null
     override fun toString(): String = ":nil"
 }
 
 object unit : atom {
-    override fun toJson(): String = JSON.stringify(String.serializer(), "unit")
+    override fun toJson(): String = Json.stringify(String.serializer(), "unit")
     override fun fromJson(s: String): atom = this
     override var meta: exp? = null
     override fun toString(): String = ":unit"
@@ -141,7 +143,7 @@ sealed class decimal<T : Number>(private val decimalValue: T) : number<T>(decima
 @ExperimentalUnsignedTypes
 sealed class collection(protected open val value: Collection<exp>) : atom, serializable, Collection<exp> by value {
     override fun toJson(): String = "[${value.joinToString(",", transform = exp::toJson)}]"
-    override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseAtom(it) } as atom
+    override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseStringAtom(it) } as atom
     override var meta: exp? = null
     override fun toString(): String = ":collection $value"
 }
@@ -189,8 +191,8 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
         val _start = if (PROFILE) Platform.getTimeNanos() else 0
         val res = func(p1)
         when {
-            PROFILE && DEBUG -> LOGGER.trace(":func ${parseMeta(meta)} ${took(_start)}")
-            DEBUG -> LOGGER.debug(":func ${parseMeta(meta)}")
+            PROFILE && DEBUG -> LOGGER.trace(":func ($p1) -> $res, ${took(_start)}")
+            DEBUG -> LOGGER.debug(":func ($p1) -> $res")
             PROFILE -> LOGGER.trace(":func ${took(_start)}")
         }
         return res
@@ -198,25 +200,25 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
 }
 
 data class char(val value: Char) : scalar() {
-    override fun toJson(): String = JSON.stringify(String.serializer(), value.toString())
+    override fun toJson(): String = Json.stringify(String.serializer(), value.toString())
     override fun fromJson(s: String): atom = char(s.first())
     override fun toString(): String = ":char $value"
 }
 
 data class string(val value: String) : scalar() {
-    override fun toJson(): String = JSON.stringify(String.serializer(), value)
+    override fun toJson(): String = Json.stringify(String.serializer(), value)
     override fun fromJson(s: String): atom = string(s)
     override fun toString(): String = ":string $value"
 }
 
 data class symbol(val value: String) : scalar() {
-    override fun toJson(): String = JSON.stringify(String.serializer(), value)
+    override fun toJson(): String = Json.stringify(String.serializer(), value)
     override fun fromJson(s: String): atom = symbol(s)
     override fun toString(): String = ":symbol $value"
 }
 
 data class keyword(val value: String) : atom, serializable {
-    override fun toJson(): String = JSON.stringify(String.serializer(), value.substringAfter(':'))
+    override fun toJson(): String = Json.stringify(String.serializer(), value.substringAfter(':'))
     override fun fromJson(s: String): keyword = keyword(":$s")
     override var meta: exp? = null
     override fun toString(): String = ":keyword $value"
@@ -231,7 +233,7 @@ data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
         }
     }
 
-    override fun toJson(): String = JSON.stringify(Boolean.serializer(), value)
+    override fun toJson(): String = Json.stringify(Boolean.serializer(), value)
     override fun fromJson(s: String): atom = bool(s.toBoolean())
     override fun toString(): String = ":bool $value"
 }
@@ -241,7 +243,7 @@ data class byte(val value: Byte) : integer<Byte>(value) {
         fun from(s: String): exp = tryOrNil { byte(s.toByte()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Byte.serializer(), value)
+    override fun toJson(): String = Json.stringify(Byte.serializer(), value)
     override fun fromJson(s: String): atom = byte(s.toByte())
     override fun toString(): String = ":byte $value"
 }
@@ -251,7 +253,7 @@ data class short(val value: Short) : integer<Short>(value) {
         fun from(s: String): exp = tryOrNil { short(s.toShort()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Short.serializer(), value)
+    override fun toJson(): String = Json.stringify(Short.serializer(), value)
     override fun fromJson(s: String): atom = short(s.toShort())
     override fun toString(): String = ":short $value"
 }
@@ -261,7 +263,7 @@ data class int(val value: Int) : integer<Int>(value) {
         fun from(s: String): exp = tryOrNil { int(s.toInt()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Int.serializer(), value)
+    override fun toJson(): String = Json.stringify(Int.serializer(), value)
     override fun fromJson(s: String): atom = int(s.toInt())
     override fun toString(): String = ":int $value"
 }
@@ -271,7 +273,7 @@ data class long(val value: Long) : integer<Long>(value) {
         fun from(s: String): exp = tryOrNil { long(s.toLong()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Long.serializer(), value)
+    override fun toJson(): String = Json.stringify(Long.serializer(), value)
     override fun fromJson(s: String): atom = long(s.toLong())
     override fun toString(): String = ":long $value"
 }
@@ -289,7 +291,7 @@ data class float(val value: Float) : decimal<Float>(value) {
         }
     }
 
-    override fun toJson(): String = JSON.stringify(Float.serializer(), value)
+    override fun toJson(): String = Json.stringify(Float.serializer(), value)
     override fun fromJson(s: String): atom = float(s.toFloat())
     override fun toString(): String = ":float $value"
 }
@@ -307,7 +309,7 @@ data class double(val value: Double) : decimal<Double>(value) {
         fun from(num: ULong) = double.from("$num")
     }
 
-    override fun toJson(): String = JSON.stringify(Double.serializer(), value)
+    override fun toJson(): String = Json.stringify(Double.serializer(), value)
     override fun fromJson(s: String): atom = double(s.toDouble())
     override fun toString(): String = ":double $value"
 }
@@ -318,7 +320,7 @@ data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
         fun from(s: String): exp = tryOrNil { ubyte(s.toUByte()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Short.serializer(), value.toShort())
+    override fun toJson(): String = Json.stringify(Short.serializer(), value.toShort())
     override fun fromJson(s: String): atom = ubyte(s.toUByte())
     override fun toString(): String = ":ubyte $value"
 }
@@ -329,7 +331,7 @@ data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
         fun from(s: String): exp = tryOrNil { ushort(s.toUShort()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Int.serializer(), value.toInt())
+    override fun toJson(): String = Json.stringify(Int.serializer(), value.toInt())
     override fun fromJson(s: String): atom = ushort(s.toUShort())
     override fun toString(): String = ":ushort $value"
 }
@@ -340,7 +342,7 @@ data class uint(val value: UInt) : integer<Long>(value.toLong()) {
         fun from(s: String): exp = tryOrNil { uint(s.toUInt()) }
     }
 
-    override fun toJson(): String = JSON.stringify(Long.serializer(), value.toLong())
+    override fun toJson(): String = Json.stringify(Long.serializer(), value.toLong())
     override fun fromJson(s: String): atom = uint(s.toUInt())
     override fun toString(): String = ":uint $value"
 }
@@ -352,7 +354,7 @@ data class ulong(val value: ULong) : decimal<Double>(value.toString().toDouble()
         fun from(number: Number) = ulong(number.toString().toULong())
     }
 
-    override fun toJson(): String = JSON.stringify(Float.serializer(), value.toString().toFloat())
+    override fun toJson(): String = Json.stringify(Float.serializer(), value.toString().toFloat())
     override fun fromJson(s: String): atom = ulong(s.toULong())
     override fun toString(): String = ":ulong $value"
 }
