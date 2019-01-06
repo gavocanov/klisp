@@ -37,6 +37,16 @@ val String.tail: String get() = substring(1)
 fun <T> T.toListOf(): List<T> = listOf(this)
 infix fun <T> T.cons(list: Iterable<T>): List<T> = listOf(this) + list.asSequence()
 
+fun <T : Any, R : Any> T?.nullableMap(mapping: (T) -> R): R? = when {
+    this == null -> null
+    else -> mapping(this)
+}
+
+fun <T : Any> T?.nullableFilter(predicate: (T) -> Boolean): T? = when {
+    this == null -> null
+    predicate(this) -> this
+    else -> null
+}
 /**
  * split by space not contained in "", '', [] and {}
  */

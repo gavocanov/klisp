@@ -111,7 +111,7 @@ abstract class Pattern {
                                     private val wt: (A, A) -> Boolean) {
 
             private var currentValue: A = bottom
-            private lateinit var compute: () -> A
+            private var compute: (() -> A)? = null
             private var fixed = false
 
             /**
@@ -137,8 +137,8 @@ abstract class Pattern {
              * Recomputes the value of this attribute.
              */
             fun update() {
-                if (fixed) return
-                val newValue = compute()
+                if (fixed || compute === null) return
+                val newValue = compute!!()
                 if (!wt(newValue, currentValue)) {
                     currentValue = join(newValue, currentValue)
                     FixedPoint.changed = true
@@ -694,11 +694,6 @@ data class ParsingState<T : Token>(val lang: Pattern,
     override fun toString(): String =
             "lang: $lang\nparse: $parse\ninput: $input"
 
-    private fun toList(o: Any): List<Any?> = when (o) {
-        is `~`<*, *> -> listOf(o.a, o.b)
-        else -> listOf(o)
-    }
-
     /**
      * Takes a step toward converting a parse string into a parse tree.
      */
@@ -737,12 +732,6 @@ data class ParsingState<T : Token>(val lang: Pattern,
  * states should consume a parsing mark.
  */
 class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
-    init {
-        input.source.addListener { search() }
-        // In case any input is ready, search:
-        search()
-    }
-
     /**
      * High-priority to-do list for configurations which could consume a character.
      */
@@ -761,6 +750,12 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
      * A stream of final parsing states; final parsing states can be reduced.
      */
     val output: LiveStream<ParsingState<T>> = LiveStream(finalSource)
+
+    init {
+        input.source.addListener { search() }
+        // In case any input is ready, search:
+        search()
+    }
 
     /**
      * Returns the newest frontier states in the parsing state search
@@ -783,7 +778,7 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
     /**
      * Searches the parsing state-space as much as possible given the input available.
      */
-    fun search() {
+    private fun search() {
         while (highTodo.isNotEmpty() || lowTodo.isNotEmpty()) {
             val newConfs = nextStates()
             highTodo = newConfs?.filter { it.lang.firstc.isNotEmpty() }?.plus(highTodo) ?: emptyList()
@@ -806,7 +801,7 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
 /**
  * Contains a sequence of two parsed items.
  */
-data class `~`<A, B>(val a: A, val b: B)
+data class ParSeq<A, B>(val first: A, val second: B)
 
 /**
  * An abstract parser that creates parse trees of type <code>A</code>.
@@ -815,7 +810,7 @@ abstract class Parser<A> {
     /**
      * @return a new parser which parses the concatenation of this parser and the supplied parser.
      */
-    infix fun <B> `~`(pat2: Parser<B>): Parser<`~`<A, B>> = ConParser(this, pat2)
+    infix fun <B> `~`(pat2: Parser<B>): Parser<ParSeq<A, B>> = ConParser(this, pat2)
 
     /**
      * @return a new parser which parses as this parser or the supplied parser.
@@ -825,12 +820,12 @@ abstract class Parser<A> {
     /**
      * @return a new parser which accepts zero or more repetitions of this parser.
      */
-    fun `*`(): Parser<List<A>> = RepParser(this)
+    val `*`: Parser<List<A>> get() = RepParser(this)
 
     /**
      * @return a parser which may parse what this parser parses.
      */
-    fun `?`(): Parser<A?> = OptParser(this)
+    val `?`: Parser<A?> get() = OptParser(this)
 
     /**
      * @return a parser that parses what this parser parses, but converts the result.
@@ -845,7 +840,7 @@ abstract class Parser<A> {
     /**
      * @return a parsing machine for this parser on the specified input.
      */
-    infix fun <T : Token> machine(input: LiveStream<T>): ParsingMachine<T> =
+    private fun <T : Token> machine(input: LiveStream<T>): ParsingMachine<T> =
             ParsingMachine(this.compile(), input)
 
     /**
@@ -899,7 +894,7 @@ open class GenericParser<A> : Parser<A>() {
     /**
      * Adds a new parser to this parser.
      */
-    infix fun `||=`(parser: Parser<A>) {
+    infix fun `ːː=`(parser: Parser<A>) {
         rules = parser cons rules
     }
 
@@ -926,7 +921,7 @@ open class GenericParser<A> : Parser<A>() {
 /**
  * Matches tokens with the specified tag.
  */
-data class TokenParse(val tag: String) : Parser<Token>() {
+data class TokenParser(val tag: String) : Parser<Token>() {
     override fun compile(): Pattern = TokenPattern(tag = tag, isParsingMarker = false)
 }
 
@@ -948,7 +943,7 @@ object EmptyParser : Parser<Nothing>() {
  * A parser representing the concatenation of two parsers.
  */
 class ConParser<A, B>(private val pat1: Parser<A>,
-                      private val pat2: Parser<B>) : Parser<`~`<A, B>>() {
+                      private val pat2: Parser<B>) : Parser<ParSeq<A, B>>() {
     override fun compile(): Pattern = ConPattern(pat1.compile(), pat2.compile())
 }
 

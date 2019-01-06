@@ -64,103 +64,123 @@ abstract class Token : Comparable<Token> {
 /**
  * Punctuation tokens.
  */
-data class PunctToken(private val s: String) : Token() {
+data class PunctToken(val value: String) : Token() {
     override val isParsingMarker: Boolean = false
-    override val clazz: String = s
-    override val tag: TokenTag = s
+    override val clazz: String = value
+    override val tag: TokenTag = value
 
     override fun localCompare(other: Token): Int {
         other as PunctToken
-        return s.compareTo(other.s)
+        return value.compareTo(other.value)
     }
 
-    override fun hashCode(): Int = s.hashCode()
-    override fun equals(other: Any?) = s == other
-    override fun toString(): String = "[$s]"
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "[$value]"
 }
 
 /**
  * Symbol tokens.
  */
-data class SymbolToken(private val s: String) : Token() {
+data class SymbolToken(val value: String) : Token() {
+    companion object {
+        const val tag: String = "Symbol"
+    }
+
     override val isParsingMarker: Boolean = false
-    override val tag: TokenTag = "Symbol"
+    override val tag: TokenTag = SymbolToken.tag
 
     override fun localCompare(other: Token): Int {
         other as SymbolToken
-        return s.compareTo(other.s)
+        return value.compareTo(other.value)
     }
 
-    override fun hashCode(): Int = s.hashCode()
-    override fun equals(other: Any?) = s == other
-    override fun toString(): String = "'$s"
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "'$value"
 }
 
 /**
  * String literal tokens.
  */
-data class StringToken(private val s: String) : Token() {
+data class StringToken(val value: String) : Token() {
+    companion object {
+        const val tag: String = "String"
+    }
+
     override val isParsingMarker: Boolean = false
-    override val tag: TokenTag = "String"
+    override val tag: TokenTag = StringToken.tag
 
     override fun localCompare(other: Token): Int {
         other as StringToken
-        return s.compareTo(other.s)
+        return value.compareTo(other.value)
     }
 
-    override fun hashCode(): Int = s.hashCode()
-    override fun equals(other: Any?) = s == other
-    override fun toString(): String = "\"$s\""
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "\"$value\""
 }
 
 /**
  * Integer tokens.
  */
-data class IntToken(private val n: Int) : Token() {
+data class IntToken(val value: Int) : Token() {
+    companion object {
+        const val tag: String = "Int"
+    }
+
     override val isParsingMarker: Boolean = false
-    override val tag: TokenTag = "Int"
+    override val tag: TokenTag = IntToken.tag
 
     override fun localCompare(other: Token): Int {
         other as IntToken
-        return n.compareTo(other.n)
+        return value.compareTo(other.value)
     }
 
-    override fun hashCode(): Int = n.hashCode()
-    override fun equals(other: Any?) = n == other
-    override fun toString(): String = "$n"
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "$value"
 }
 
 /**
  * Boolean literal tokens.
  */
-data class BooleanToken(private val b: Boolean) : Token() {
+data class BooleanToken(val value: Boolean) : Token() {
+    companion object {
+        const val tag: String = "Boolean"
+    }
+
     override val isParsingMarker: Boolean = false
-    override val tag: TokenTag = "Boolean"
+    override val tag: TokenTag = BooleanToken.tag
 
     override fun localCompare(other: Token): Int {
         other as BooleanToken
-        return b.compareTo(other.b)
+        return value.compareTo(other.value)
     }
 
-    override fun hashCode(): Int = b.hashCode()
-    override fun equals(other: Any?) = b == other
-    override fun toString(): String = b.toString()
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = value.toString()
 }
 
 /**
  * Character tokens.
  */
-data class CharToken(private val c: Char) : Token() {
+data class CharToken(val value: Char) : Token() {
+    companion object {
+        const val tag: String = "Char"
+    }
+
     override val isParsingMarker: Boolean = false
-    override val tag: TokenTag = "Char"
+    override val tag: TokenTag = CharToken.tag
 
     override fun localCompare(other: Token): Int {
         other as CharToken
-        return c.compareTo(other.c)
+        return value.compareTo(other.value)
     }
 
-    override fun hashCode(): Int = c.hashCode()
-    override fun equals(other: Any?) = c == other
-    override fun toString(): String = "'$c'"
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "'$value'"
 }
 
