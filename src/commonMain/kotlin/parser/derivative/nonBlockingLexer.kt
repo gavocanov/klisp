@@ -331,9 +331,9 @@ abstract class NonBlockingLexer<C : Char, A> {
 
         // If there's input left to process, process it:
         if (!currentInput.isPlugged) {
-            val c = currentInput.head()
+            val c = currentInput.head
             currentState = currentState.next(c)
-            currentInput = currentInput.tail()
+            currentInput = currentInput.tail
         }
 
         // If more progress could be made, keep working.
@@ -391,7 +391,7 @@ abstract class NonBlockingLexer<C : Char, A> {
     protected fun String.toRL(): RegularLanguage = when {
         this.length == 1 -> Character(first)
         this.isNotEmpty() -> Catenation(first.toRL(), rest.toRL())
-        else -> Epsilon
+        else -> ε
     }
 
     protected infix fun Char.thru(end: Char): RegularLanguage = CharSet((this..end).toSet())

@@ -25,7 +25,7 @@
  * Each action can emit zero or more tokens downstream and indicate the
  * next lexing state.
  */
-@file:Suppress("unused")
+@file:Suppress("unused", "NonAsciiCharacters")
 
 package klisp.parser.derivative
 
@@ -54,7 +54,7 @@ abstract class RegularLanguage {
      * @return the derivative of this regular expression with respect
      * to the end of the input.
      */
-    open fun deriveEND(): RegularLanguage = EmptySet
+    open fun deriveEND(): RegularLanguage = `∅`
 
     /**
      * @return true iff the regular expression accepts the empty string.
@@ -91,7 +91,7 @@ abstract class RegularLanguage {
     val `*`: RegularLanguage
         get() = when {
             isEmptyString -> this
-            rejectsAll -> Epsilon
+            rejectsAll -> ε
             else -> Star(this)
         }
 
@@ -99,11 +99,11 @@ abstract class RegularLanguage {
      * Exactly n repetitions
      */
     infix fun `^`(n: Int): RegularLanguage = when {
-        n < 0 -> EmptySet
-        n == 0 -> Epsilon
+        n < 0 -> `∅`
+        n == 0 -> ε
         n == 1 -> this
-        isEmptyString -> Epsilon
-        rejectsAll -> EmptySet
+        isEmptyString -> ε
+        rejectsAll -> `∅`
         else -> Repetition(this, n)
     }
 
@@ -113,7 +113,7 @@ abstract class RegularLanguage {
     val `+`: RegularLanguage
         get() = when {
             isEmptyString -> this
-            rejectsAll -> EmptySet
+            rejectsAll -> `∅`
             else -> this `~` Star(this)
         }
 
@@ -123,8 +123,8 @@ abstract class RegularLanguage {
     val `?`: RegularLanguage
         get() = when {
             isEmptyString -> this
-            rejectsAll -> Epsilon
-            else -> Epsilon `||` this
+            rejectsAll -> ε
+            else -> ε `||` this
         }
 
     /**
@@ -134,8 +134,8 @@ abstract class RegularLanguage {
     infix fun `~`(suffix: RegularLanguage): RegularLanguage = when {
         isEmptyString -> suffix
         suffix.isEmptyString -> this
-        rejectsAll -> EmptySet
-        suffix.rejectsAll -> EmptySet
+        rejectsAll -> `∅`
+        suffix.rejectsAll -> `∅`
         else -> Catenation(this, suffix)
     }
 
@@ -164,8 +164,8 @@ abstract class RegularLanguage {
  * A regular expression that matches the end of the input.
  */
 object END : RegularLanguage() {
-    override infix fun derive(c: Char): EmptySet = EmptySet
-    override fun deriveEND(): Epsilon = Epsilon
+    override infix fun derive(c: Char): `∅` = `∅`
+    override fun deriveEND(): ε = ε
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean = false
     override val isEmptyString: Boolean = false
@@ -175,30 +175,30 @@ object END : RegularLanguage() {
 /**
  * A regular expression that matches no strings at all.
  */
-object EmptySet : RegularLanguage() {
-    override infix fun derive(c: Char): EmptySet = this
+object `∅` : RegularLanguage() {
+    override infix fun derive(c: Char): `∅` = this
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean = true
     override val isEmptyString: Boolean = false
-    override fun toString(): String = "{}"
+    override fun toString(): String = "∅"
 }
 
 /**
  * A regular expression that matches the empty string.
  */
-object Epsilon : RegularLanguage() {
-    override infix fun derive(c: Char): EmptySet = EmptySet
+object ε : RegularLanguage() {
+    override infix fun derive(c: Char): `∅` = `∅`
     override val acceptsEmptyString: Boolean = true
     override val rejectsAll: Boolean = false
     override val isEmptyString: Boolean = true
-    override fun toString(): String = "e"
+    override fun toString(): String = "ε"
 }
 
 /**
  * A regular expression that matches any character.
  */
 object AnyChar : RegularLanguage() {
-    override infix fun derive(c: Char): Epsilon = Epsilon
+    override infix fun derive(c: Char): ε = ε
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean = false
     override val isEmptyString: Boolean = false
@@ -210,8 +210,8 @@ object AnyChar : RegularLanguage() {
  */
 data class Character(private val ch: Char) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (c == ch) Epsilon
-            else EmptySet
+            if (c == ch) ε
+            else `∅`
 
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean = false
@@ -224,8 +224,8 @@ data class Character(private val ch: Char) : RegularLanguage() {
  */
 data class CharSet(private val set: Set<Char>) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (set.contains(c)) Epsilon
-            else EmptySet
+            if (set.contains(c)) ε
+            else `∅`
 
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean get() = set.isEmpty()
@@ -238,8 +238,8 @@ data class CharSet(private val set: Set<Char>) : RegularLanguage() {
  */
 data class NotCharSet(private val set: Set<Char>) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (set.contains(c)) EmptySet
-            else Epsilon
+            if (set.contains(c)) `∅`
+            else ε
 
     override val acceptsEmptyString: Boolean = false
     // NOTE: If the set size is the same as the
@@ -308,7 +308,7 @@ data class Repetition(private val regex: RegularLanguage,
     : RegularLanguage() {
 
     override infix fun derive(c: Char): RegularLanguage =
-            if (n <= 0) Epsilon
+            if (n <= 0) ε
             else (regex derive c) `~` (regex `^` (n - 1))
 
     override val acceptsEmptyString: Boolean

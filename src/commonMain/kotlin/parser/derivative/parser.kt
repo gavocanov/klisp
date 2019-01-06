@@ -1,10 +1,13 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "NonAsciiCharacters")
 
 package klisp.parser.derivative
 
 import klisp.SortedSet
 import klisp.cons
+import klisp.head
 import klisp.subsetOf
+import klisp.tail
+import klisp.toListOf
 
 /**
  * A context-free pattern describes a language (a set of strings) with
@@ -116,7 +119,7 @@ abstract class Pattern {
              *
              * @param computation the computation that updates this attribute.
              */
-            infix fun `|=`(computation: () -> A) {
+            infix fun `ː=`(computation: () -> A) {
                 compute = { computation() }
             }
 
@@ -125,7 +128,7 @@ abstract class Pattern {
              *
              * @param value the value of this attribute.
              */
-            infix fun `|==`(value: A) {
+            infix fun `ː==`(value: A) {
                 currentValue = value
                 fixed = true
             }
@@ -230,11 +233,11 @@ private object FixedPoint {
  */
 data class AltPattern(private val pat1: Pattern, private val pat2: Pattern) : Pattern() {
     init {
-        attributes.nullable `|=` { pat1.nullable || pat2.nullable }
-        attributes.nullablec `|=` { pat1.nullablec || pat2.nullablec }
-        attributes.empty `|=` { pat1.empty || pat2.empty }
-        attributes.first `|=` { SortedSet(pat1.first + pat2.first) }
-        attributes.firstc `|=` { SortedSet(pat1.firstc + pat2.firstc) }
+        attributes.nullable `ː=` { pat1.nullable || pat2.nullable }
+        attributes.nullablec `ː=` { pat1.nullablec || pat2.nullablec }
+        attributes.empty `ː=` { pat1.empty || pat2.empty }
+        attributes.first `ː=` { SortedSet(pat1.first + pat2.first) }
+        attributes.firstc `ː=` { SortedSet(pat1.firstc + pat2.firstc) }
     }
 
     override fun derivative(c: TokenTag): Pattern =
@@ -257,14 +260,14 @@ data class AltPattern(private val pat1: Pattern, private val pat2: Pattern) : Pa
  */
 data class ConPattern(private val pat1: Pattern, private val pat2: Pattern) : Pattern() {
     init {
-        attributes.nullable `|=` { pat1.nullable && pat2.nullable }
-        attributes.nullablec `|=` { pat1.nullablec && pat2.nullablec }
-        attributes.empty `|=` { pat1.empty || pat2.empty }
-        attributes.first `|=` {
+        attributes.nullable `ː=` { pat1.nullable && pat2.nullable }
+        attributes.nullablec `ː=` { pat1.nullablec && pat2.nullablec }
+        attributes.empty `ː=` { pat1.empty || pat2.empty }
+        attributes.first `ː=` {
             if (pat1.nullable) SortedSet(pat1.first + pat2.first)
             else pat1.first
         }
-        attributes.firstc `|=` {
+        attributes.firstc `ː=` {
             if (pat1.nullablec) SortedSet(pat1.firstc + pat2.firstc)
             else pat1.firstc
         }
@@ -293,11 +296,11 @@ data class ConPattern(private val pat1: Pattern, private val pat2: Pattern) : Pa
  */
 data class RepPattern(private val pat: Pattern) : Pattern() {
     init {
-        attributes.nullable `|==` true
-        attributes.nullablec `|==` true
-        attributes.empty `|==` false
-        attributes.first `|=` { pat.first }
-        attributes.firstc `|=` { pat.firstc }
+        attributes.nullable `ː==` true
+        attributes.nullablec `ː==` true
+        attributes.empty `ː==` false
+        attributes.first `ː=` { pat.first }
+        attributes.firstc `ː=` { pat.firstc }
     }
 
     override fun derivative(c: TokenTag): Pattern = pat derive c `~~` this
@@ -316,11 +319,11 @@ data class RepPattern(private val pat: Pattern) : Pattern() {
  */
 data class OptPattern(private val pat: Pattern) : Pattern() {
     init {
-        attributes.nullable `|==` true
-        attributes.nullablec `|==` true
-        attributes.empty `|==` false
-        attributes.first `|=` { pat.first }
-        attributes.firstc `|=` { pat.firstc }
+        attributes.nullable `ː==` true
+        attributes.nullablec `ː==` true
+        attributes.empty `ː==` false
+        attributes.first `ː=` { pat.first }
+        attributes.firstc `ː=` { pat.firstc }
     }
 
     override fun derivative(c: TokenTag): Pattern =
@@ -351,11 +354,11 @@ data class TokenPattern(val tag: TokenTag,
     constructor(token: Token) : this(token.tag, token.isParsingMarker)
 
     init {
-        attributes.nullable `|==` false
-        attributes.nullablec `|==` this.isParsingMarker
-        attributes.empty `|==` false
-        attributes.first `|==` SortedSet(this)
-        attributes.firstc `|==`
+        attributes.nullable `ː==` false
+        attributes.nullablec `ː==` this.isParsingMarker
+        attributes.empty `ː==` false
+        attributes.first `ː==` SortedSet(this)
+        attributes.firstc `ː==`
                 if (this.isParsingMarker)
                     SortedSet()
                 else
@@ -391,11 +394,11 @@ data class TokenPattern(val tag: TokenTag,
  */
 object Eps : Pattern() {
     init {
-        attributes.nullable `|==` true
-        attributes.nullablec `|==` true
-        attributes.first `|==` SortedSet()
-        attributes.firstc `|==` SortedSet()
-        attributes.empty `|==` false
+        attributes.nullable `ː==` true
+        attributes.nullablec `ː==` true
+        attributes.first `ː==` SortedSet()
+        attributes.firstc `ː==` SortedSet()
+        attributes.empty `ː==` false
     }
 
     override fun derivative(c: TokenTag): Pattern = EmptyPattern
@@ -409,11 +412,11 @@ object Eps : Pattern() {
  */
 object EmptyPattern : Pattern() {
     init {
-        attributes.nullable `|==` false
-        attributes.nullablec `|==` false
-        attributes.first `|==` SortedSet()
-        attributes.firstc `|==` SortedSet()
-        attributes.empty `|==` true
+        attributes.nullable `ː==` false
+        attributes.nullablec `ː==` false
+        attributes.first `ː==` SortedSet()
+        attributes.firstc `ː==` SortedSet()
+        attributes.empty `ː==` true
     }
 
     override fun derivative(c: TokenTag): Pattern = EmptyPattern
@@ -459,11 +462,11 @@ open class GenericPattern : Pattern() {
     override infix fun derivative(c: TokenTag): GenericPattern = Derivative(this, c)
 
     init {
-        attributes.nullable `|=` { rules.any(Pattern::nullable) }
-        attributes.nullablec `|=` { rules.any(Pattern::nullablec) }
-        attributes.empty `|=` { rules.all(Pattern::empty) }
-        attributes.first `|=` { rules.fold(SortedSet()) { t, p -> SortedSet(t + p.first) } }
-        attributes.firstc `|=` { rules.fold(SortedSet()) { t, p -> SortedSet(t + p.firstc) } }
+        attributes.nullable `ː=` { rules.any(Pattern::nullable) }
+        attributes.nullablec `ː=` { rules.any(Pattern::nullablec) }
+        attributes.empty `ː=` { rules.all(Pattern::empty) }
+        attributes.first `ː=` { rules.fold(SortedSet()) { t, p -> SortedSet(t + p.first) } }
+        attributes.firstc `ː=` { rules.fold(SortedSet()) { t, p -> SortedSet(t + p.firstc) } }
     }
 
     override fun equals(other: Any?): Boolean =
@@ -608,9 +611,9 @@ object CloseOpt : ParsingMark() {
  * @param parse the parse string constructed thus far.
  * @param input the remaining input.
  */
-data class ParsingState<T : Token>(private val lang: Pattern,
-                                   private val parse: List<Token>,
-                                   private val input: LiveStream<T>) {
+data class ParsingState<T : Token>(val lang: Pattern,
+                                   val parse: List<Token>,
+                                   val input: LiveStream<T>) {
 
     private val firstMarks: Set<ParsingMark>
         get() {
@@ -639,7 +642,10 @@ data class ParsingState<T : Token>(private val lang: Pattern,
      */
     val nextConsume: ParsingState<T>?
         get() {
-            val (c, rest) = `|~|` apply input
+            val (c, rest) =
+                    if (input.isPlugged) null to null
+                    else input.head to input.tail
+
             return when {
                 c !== null && rest !== null -> {
                     val newLang = lang derive c.tag
@@ -647,9 +653,360 @@ data class ParsingState<T : Token>(private val lang: Pattern,
                     if (!newLang.empty) ParsingState(newLang, newParseString, rest)
                     else null
                 }
-                LiveNil(input) -> throw IllegalStateException("can't consume -- end of input")
-                LivePlug(input) -> throw IllegalStateException("can't consume on a plugged stream")
+                input.isEmpty -> throw IllegalStateException("can't consume -- end of input")
+                input.isPlugged -> throw IllegalStateException("can't consume on a plugged stream")
                 else -> throw IllegalStateException("this should not be")
             }
         }
+    /**
+     * @return the next states resulting from consuming all possible
+     *         parsing marks at the start of the language.
+     */
+    val nextMark: List<ParsingState<T>>
+        get() {
+            val marks = firstMarks
+            return if (input.isPlugged) {
+                // If the input is plugged; derive.
+                marks.map { c ->
+                    val newLang = lang derive c
+                    val newParseString = c cons parse
+                    ParsingState(newLang, newParseString, input)
+                }
+            } else {
+                // If the input isn't plugged, eliminate subsequent states which
+                // can't ever match the head of the input.
+                val canMatchHead = { pats: Set<TokenPattern> ->
+                    if (input.isEmpty) true
+                    else pats.any { pat -> pat matches input.head.tag }
+                }
+                marks
+                        .filter { c ->
+                            (lang derive c).nullable || canMatchHead((lang derive c).firstc)
+                        }
+                        .map { c ->
+                            val newLang = lang derive c
+                            val newParseString = c cons parse
+                            ParsingState(newLang, newParseString, input)
+                        }
+            }
+        }
+
+    override fun toString(): String =
+            "lang: $lang\nparse: $parse\ninput: $input"
+
+    private fun toList(o: Any): List<Any?> = when (o) {
+        is `~`<*, *> -> listOf(o.a, o.b)
+        else -> listOf(o)
+    }
+
+    /**
+     * Takes a step toward converting a parse string into a parse tree.
+     */
+    private fun reduceStep(stack: List<Any>, parseString: List<Token>): Pair<List<Any>, List<Token>> {
+        val combine: (Any, List<Any>, List<Token>) -> Pair<List<Any>, List<Token>> =
+                { newTop: Any, _stack: List<Any>, rest: List<Token> ->
+                    emptyList<Any>() to emptyList<Token>()
+                }
+        val reassociate: (Any) -> Any = { data ->
+            data
+        }
+
+        throw IllegalStateException("bug: over-parsed")
+    }
+
+    /**
+     * Converts a parse string into a parse tree.
+     */
+    fun reduce(): Any {
+        var state: Pair<List<Any>, List<Token>> = emptyList<Any>() to parse
+        while (state.second.isNotEmpty()) {
+            state = reduceStep(state.first, state.second)
+        }
+        return state.first.head
+    }
 }
+
+/**
+ * A parsing machine parses by exploring the graph of parsing states.
+ *
+ * The exploration uses two work-lists: a high-priority list, and a low-priority list.
+ *
+ * The exploration only pulls from the low-priority list when the high-priority list is empty.
+ *
+ * The high-priority states should consume a character; the low-priority
+ * states should consume a parsing mark.
+ */
+class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
+    init {
+        input.source.addListener { search() }
+        // In case any input is ready, search:
+        search()
+    }
+
+    /**
+     * High-priority to-do list for configurations which could consume a character.
+     */
+    private var highTodo: List<ParsingState<T>> =
+            listOf(ParsingState(lang, emptyList(), input))
+
+    /**
+     * Low-priority to-do list for configurations which might produce a parsing marker.
+     */
+    private var lowTodo: List<ParsingState<T>> =
+            listOf(ParsingState(lang, emptyList(), input))
+
+    private val finalSource = LiveStreamSource<ParsingState<T>>()
+
+    /**
+     * A stream of final parsing states; final parsing states can be reduced.
+     */
+    val output: LiveStream<ParsingState<T>> = LiveStream(finalSource)
+
+    /**
+     * Returns the newest frontier states in the parsing state search
+     * space.
+     */
+    private fun nextStates(): Iterable<ParsingState<T>>? = when {
+        highTodo.isNotEmpty() && highTodo.head.canConsume -> {
+            val next = highTodo.head
+            highTodo = highTodo.tail
+            next.nextConsume?.toListOf()
+        }
+        lowTodo.isNotEmpty() && !lowTodo.head.lang.empty -> {
+            val next = lowTodo.head
+            lowTodo = lowTodo.tail
+            next.nextMark
+        }
+        else -> null
+    }
+
+    /**
+     * Searches the parsing state-space as much as possible given the input available.
+     */
+    fun search() {
+        while (highTodo.isNotEmpty() || lowTodo.isNotEmpty()) {
+            val newConfs = nextStates()
+            highTodo = newConfs?.filter { it.lang.firstc.isNotEmpty() }?.plus(highTodo) ?: emptyList()
+            lowTodo = newConfs?.filter { it.hasMarks }?.plus(lowTodo) ?: emptyList()
+            var foundFinal = false
+            newConfs?.forEach { conf ->
+                if (conf.isFinal) {
+                    finalSource += conf
+                    foundFinal = true
+                }
+            }
+            // Pause search when we've found at least one final state
+            if (foundFinal) return
+        }
+    }
+}
+
+/* Parser combinators. */
+
+/**
+ * Contains a sequence of two parsed items.
+ */
+data class `~`<A, B>(val a: A, val b: B)
+
+/**
+ * An abstract parser that creates parse trees of type <code>A</code>.
+ */
+abstract class Parser<A> {
+    /**
+     * @return a new parser which parses the concatenation of this parser and the supplied parser.
+     */
+    infix fun <B> `~`(pat2: Parser<B>): Parser<`~`<A, B>> = ConParser(this, pat2)
+
+    /**
+     * @return a new parser which parses as this parser or the supplied parser.
+     */
+    infix fun `|`(pat2: Parser<A>): Parser<A> = AltParser(this, pat2)
+
+    /**
+     * @return a new parser which accepts zero or more repetitions of this parser.
+     */
+    fun `*`(): Parser<List<A>> = RepParser(this)
+
+    /**
+     * @return a parser which may parse what this parser parses.
+     */
+    fun `?`(): Parser<A?> = OptParser(this)
+
+    /**
+     * @return a parser that parses what this parser parses, but converts the result.
+     */
+    infix fun <B> `==▷`(f: (A) -> B) = RedParser(this, f)
+
+    /**
+     * @return a context-free pattern that matches the parse strings describe by this parser.
+     */
+    abstract fun compile(): Pattern
+
+    /**
+     * @return a parsing machine for this parser on the specified input.
+     */
+    infix fun <T : Token> machine(input: LiveStream<T>): ParsingMachine<T> =
+            ParsingMachine(this.compile(), input)
+
+    /**
+     * Returns the parse tree from completely consuming the input for this parse.
+     *
+     * This procedure assumes the parser is unambiguous.
+     *
+     * If you need access to all possible parse trees, use the <code>machine</code> method.
+     *
+     * @return the parse tree from completely consuming the input for this parse.
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Token> parseFull(input: LiveStream<T>): A {
+        val m = machine(input)
+        val finals = m.output
+        val state = finals.head
+        return if (state.input.isEmpty) state.reduce() as A
+        else throw IllegalStateException("full parse failure; input remaining: ${state.input}")
+    }
+
+    fun <T : Token> parseFull(input: Iterable<T>): A =
+            parseFull(LiveStream(input))
+
+    /**
+     * Returns the parse tree and the remaining input.
+     *
+     * This procedure assumes the parser is unambiguous.
+     *
+     * If you need access to all possible parse trees, use the <code>machine</code> method.
+     *
+     * @return the parse tree and the remaining input.
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Token> parse(input: LiveStream<T>): Pair<A, LiveStream<T>> {
+        val m = machine(input)
+        val finals = m.output
+        val state = finals.head
+        return state.reduce() as A to state.input
+    }
+
+    fun <T : Token> parse(input: Iterable<T>): Pair<A, LiveStream<T>> =
+            parse(LiveStream(input))
+}
+
+/**
+ * Represents an extensible parser that produces parse trees of type <code>A</code>.
+ */
+open class GenericParser<A> : Parser<A>() {
+    private var rules: List<Parser<A>> = emptyList()
+
+    /**
+     * Adds a new parser to this parser.
+     */
+    infix fun `||=`(parser: Parser<A>) {
+        rules = parser cons rules
+    }
+
+    private var compileCache: GenericPattern? = null
+
+    /**
+     * Compiles a parser into context-free pattern, such that when the context-free pattern
+     * is given to a parsing machine, the parsing machine produces parse trees.
+     */
+    override fun compile(): GenericPattern {
+        if (compileCache !== null)
+            return compileCache ?: throw NullPointerException()
+
+        compileCache = GenericPattern()
+        rules.forEach { pat ->
+            val cc = compileCache ?: throw NullPointerException()
+            cc `||=` pat.compile()
+        }
+
+        return compileCache ?: throw NullPointerException()
+    }
+}
+
+/**
+ * Matches tokens with the specified tag.
+ */
+data class TokenParse(val tag: String) : Parser<Token>() {
+    override fun compile(): Pattern = TokenPattern(tag = tag, isParsingMarker = false)
+}
+
+/**
+ * Matches strings of length 0.
+ */
+object EpsParser : Parser<Unit>() {
+    override fun compile(): Pattern = TokenPattern(HardEps)
+}
+
+/**
+ * Cannot match any strings.
+ */
+object EmptyParser : Parser<Nothing>() {
+    override fun compile(): Pattern = EmptyPattern
+}
+
+/**
+ * A parser representing the concatenation of two parsers.
+ */
+class ConParser<A, B>(private val pat1: Parser<A>,
+                      private val pat2: Parser<B>) : Parser<`~`<A, B>>() {
+    override fun compile(): Pattern = ConPattern(pat1.compile(), pat2.compile())
+}
+
+/**
+ * A parser representing the union of two parsers.
+ */
+class AltParser<A>(private val pat1: Parser<A>,
+                   private val pat2: Parser<A>) : Parser<A>() {
+    override fun compile(): Pattern = AltPattern(pat1.compile(), pat2.compile())
+}
+
+/**
+ * A parser representing the possibly-empty repetition of another parser.
+ */
+class RepParser<A>(private val pat: Parser<A>) : Parser<List<A>>() {
+    override fun compile(): Pattern {
+        val openTP = TokenPattern(OpenRep)
+        val optPat = RepPattern(pat.compile())
+        val closeTP = TokenPattern(CloseRep)
+        return ConPattern(openTP, ConPattern(optPat, closeTP))
+    }
+}
+
+/**
+ * A parser representing zero or one instances of another parser.
+ */
+class OptParser<A>(private val pat: Parser<A>) : Parser<A?>() {
+    override fun compile(): Pattern {
+        val openTP = TokenPattern(OpenOpt)
+        val optPat = OptPattern(pat.compile())
+        val closeTP = TokenPattern(CloseOpt)
+        return ConPattern(openTP, ConPattern(optPat, closeTP))
+    }
+}
+
+private object Reduction {
+    private var id = 0
+
+    val nextId: Int
+        get() {
+            id += 1
+            return id
+        }
+}
+
+/**
+ * A parser which converts the parse tree of one parse into a new parse tree.
+ */
+class RedParser<A, B>(private val pat: Parser<A>,
+                      f: (A) -> B) : Parser<B>() {
+    @Suppress("UNCHECKED_CAST")
+    private val g: (Any) -> Any = f as (Any) -> Any
+    private val id by lazy { Reduction.nextId }
+
+    override fun compile(): Pattern {
+        val openTP = TokenPattern(OpenRed(g, id))
+        val closeTP = TokenPattern(CloseRed(g, id))
+        return ConPattern(openTP, ConPattern(pat.compile(), closeTP))
+    }
+}
+

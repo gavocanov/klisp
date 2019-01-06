@@ -103,55 +103,35 @@ data class LiveStream<A>(val source: LiveStreamSource<A>) {
     /**
      * @return if not plugged, the object at this location in the stream.
      */
-    fun head(): A = if (headCache !== null)
-        headCache ?: throw NullPointerException()
-    else {
-        if (isPlugged) throw IllegalStateException("can't pull a plugged head")
-        headCache = source.next() ?: throw NullPointerException()
-        headCache ?: throw NullPointerException()
-    }
+    val head: A
+        get() = if (headCache !== null)
+            headCache ?: throw NullPointerException()
+        else {
+            if (isPlugged) throw IllegalStateException("can't pull a plugged head")
+            headCache = source.next() ?: throw NullPointerException()
+            headCache ?: throw NullPointerException()
+        }
 
     /**
      * @return if not plugged, the remainder of this stream.
      */
-    fun tail() = if (isPlugged)
-        throw IllegalStateException("can't pull a plugged tail")
-    else {
-        if (tailCache !== null)
-            tailCache ?: throw NullPointerException()
+    val tail
+        get() = if (isPlugged)
+            throw IllegalStateException("can't pull a plugged tail")
         else {
-            this.head()
-            tailCache = LiveStream(source)
-            tailCache ?: throw NullPointerException()
+            if (tailCache !== null)
+                tailCache ?: throw NullPointerException()
+            else {
+                this.head
+                tailCache = LiveStream(source)
+                tailCache ?: throw NullPointerException()
+            }
         }
-    }
 
     override fun toString(): String = when {
-        isEmpty -> "LiveNil()"
-        isPlugged -> "LivePlug()"
-        else -> "${head()} |~| ${tail()}"
+        isEmpty -> "∅"
+        isPlugged -> "◌"
+        else -> "$head ː~ː $tail"
     }
 }
 
-/**
- * Pattern matches the current last element of a live stream.
- */
-object LivePlug {
-    operator fun <A> invoke(stream: LiveStream<A>): Boolean = stream.isPlugged
-}
-
-/**
- * Pattern matches the end of a (terminated) live stream.
- */
-object LiveNil {
-    operator fun <A> invoke(stream: LiveStream<A>): Boolean = stream.isEmpty
-}
-
-/**
- * Pattern matches an element and its tail in a live stream.
- */
-object `|~|` {
-    infix fun <A> apply(stream: LiveStream<A>): Pair<A?, LiveStream<A>?> =
-            if (stream.isPlugged) null to null
-            else stream.head() to stream.tail()
-}
