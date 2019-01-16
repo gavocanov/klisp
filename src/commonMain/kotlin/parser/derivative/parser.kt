@@ -2,12 +2,20 @@
 
 package klisp.parser.derivative
 
+import klisp.FP
+import klisp.IFP
+import klisp.None
+import klisp.Option
+import klisp.Some
 import klisp.SortedSet
 import klisp.cons
 import klisp.head
+import klisp.reversed
 import klisp.subsetOf
 import klisp.tail
 import klisp.toListOf
+import klisp.unApply
+import kotlin.jvm.Synchronized
 
 /**
  * A context-free pattern describes a language (a set of strings) with
@@ -57,8 +65,15 @@ abstract class Pattern {
      * @param c the token tag with respect to which the derivative is taken.
      * @return the derivative with respect to <code>c</code>.
      */
-    open infix fun derive(c: TokenTag): Pattern =
-            derivatives[c] ?: this derivative c
+    open infix fun derive(c: TokenTag): Pattern {
+        val cached = derivatives[c]
+        return if (cached !== null) cached
+        else {
+            val d = this.derivative(c)
+            derivatives[c] = d
+            d
+        }
+    }
 
     /**
      * Specific patterns need to define this method.
@@ -69,118 +84,168 @@ abstract class Pattern {
     /**
      * @return the set of tokens which could appear first in this pattern.
      */
-    val first: SortedSet<TokenPattern> = attributes.first.value
+    val first: SortedSet<TokenPattern> get() = attributes.first.value
 
     /**
      * @return the set of tokens which could appear first in this pattern,
      * ignoring parsing markers.
      */
-    val firstc: SortedSet<TokenPattern> = attributes.firstc.value
+    val firstc: SortedSet<TokenPattern> get() = attributes.firstc.value
 
     /**
      * @return true iff this pattern accepts the empty string.
      */
-    val nullable: Boolean = attributes.nullable.value
+    val nullable: Boolean get() = attributes.nullable.value
 
     /**
      * @return true iff this pattern accepts the empty string, treating parsing markers as empty.
      */
-    val nullablec: Boolean = attributes.nullablec.value
+    val nullablec: Boolean get() = attributes.nullablec.value
 
     /**
      * @return true iff this pattern accepts no strings.
      */
-    val empty: Boolean = attributes.empty.value
+    val empty: Boolean get() = attributes.empty.value
+
+    /**
+     * An attribute computable by fixed point.
+     *
+     * @param bottom the bottom of the attribute's lattice.
+     * @param join the lub operation on the lattice.
+     * @param wt the partial order on the lattice.
+     */
+    abstract class Attribute<A>(private val bottom: A,
+                                private val join: (A, A) -> A,
+                                private val wt: (A, A) -> Boolean,
+                                private val attributes: Attributes) {
+
+        private var currentValue: A = bottom
+        private var compute: () -> A = { throw IllegalStateException("should not be here") }
+        private var fixed = false
+
+        /**
+         * Sets the computation that updates this attribute.
+         *
+         * @param computation the computation that updates this attribute.
+         */
+        infix fun `ː=`(computation: () -> A) {
+            val a = computation
+            compute = a
+        }
+
+        /**
+         * Permanently fixes the value of this attribute.
+         *
+         * @param value the value of this attribute.
+         */
+        infix fun `ː==`(value: A) {
+            currentValue = value
+            fixed = true
+        }
+
+        /**
+         * Recomputes the value of this attribute.
+         */
+        fun update() {
+            if (fixed)
+                return
+
+            val newValue = compute()
+
+            if (!wt(newValue, currentValue)) {
+                currentValue = join(newValue, currentValue)
+                FixedPoint.changed(true)
+            }
+        }
+
+        /**
+         * The current value of this attribute.
+         */
+        val value: A
+            get() {
+                // When the value of this attribute is requested, there are
+                // three possible cases:
+                //
+                // (1) It's already been computed (this.stabilized);
+                // (2) It's been manually set (this.fixed); or
+                // (3) It needs to be computed (generation < FixedPoint.generation).
+                if (fixed || attributes.stabilized || (attributes.generation == FixedPoint.generation()))
+                    return currentValue
+                else {
+                    // Run or continue the fixed-point computation:
+                    attributes.fix()
+                }
+
+                if (FixedPoint.stabilized())
+                    attributes.stabilized = true
+
+                return currentValue
+            }
+    }
+
+    interface Attributes {
+        var generation: Int
+        var stabilized: Boolean
+        val first: Attribute<SortedSet<TokenPattern>>
+        val firstc: Attribute<SortedSet<TokenPattern>>
+        val nullable: Attribute<Boolean>
+        val nullablec: Attribute<Boolean>
+        val empty: Attribute<Boolean>
+        fun fix()
+    }
 
     /**
      * A collection of attributes which must be computed by iteration to a fixed point.
      */
-    object attributes {
-        private var generation = -1
-        private var stabilized = false
-
-        /**
-         * An attribute computable by fixed point.
-         *
-         * @param bottom the bottom of the attribute's lattice.
-         * @param join the lub operation on the lattice.
-         * @param wt the partial order on the lattice.
-         */
-        abstract class Attribute<A>(private val bottom: A,
-                                    private val join: (A, A) -> A,
-                                    private val wt: (A, A) -> Boolean) {
-
-            private var currentValue: A = bottom
-            private var compute: (() -> A)? = null
-            private var fixed = false
-
-            /**
-             * Sets the computation that updates this attribute.
-             *
-             * @param computation the computation that updates this attribute.
-             */
-            infix fun `ː=`(computation: () -> A) {
-                compute = { computation() }
-            }
-
-            /**
-             * Permanently fixes the value of this attribute.
-             *
-             * @param value the value of this attribute.
-             */
-            infix fun `ː==`(value: A) {
-                currentValue = value
-                fixed = true
-            }
-
-            /**
-             * Recomputes the value of this attribute.
-             */
-            fun update() {
-                if (fixed || compute === null) return
-                val newValue = compute!!()
-                if (!wt(newValue, currentValue)) {
-                    currentValue = join(newValue, currentValue)
-                    FixedPoint.changed = true
-                }
-            }
-
-            /**
-             * The current value of this attribute.
-             */
-            val value: A
-                get() {
-                    // When the value of this attribute is requested, there are
-                    // three possible cases:
-                    //
-                    // (1) It's already been computed (this.stabilized);
-                    // (2) It's been manually set (this.fixed); or
-                    // (3) It needs to be computed (generation < FixedPoint.generation).
-                    if (fixed || stabilized || (generation == FixedPoint.generation))
-                        return currentValue
-                    else {
-                        // Run or continue the fixed-point computation:
-                        fix()
-                    }
-
-                    if (FixedPoint.stabilized)
-                        stabilized = true
-
-                    return currentValue
-                }
-        }
+    protected val attributes = object : Attributes {
+        override var generation = -1
+        override var stabilized = false
 
         // Subsumption tests for attributes:
 
-        private fun implies(a: Boolean, b: Boolean) = (!a) || b
-        private fun follows(a: Boolean, b: Boolean) = (!b) || a
-        private fun subsetOf(a: Set<TokenPattern>, b: Set<TokenPattern>) = a subsetOf b
+        private fun implies(a: Boolean, b: Boolean) =
+                (!a) || b
 
-        object first : Attribute<SortedSet<TokenPattern>>(SortedSet(), { a, b -> SortedSet(a + b) }, ::subsetOf)
-        object firstc : Attribute<SortedSet<TokenPattern>>(SortedSet(), { a, b -> SortedSet(a + b) }, ::subsetOf)
-        object nullable : Attribute<Boolean>(false, { a, b -> a || b }, ::implies)
-        object nullablec : Attribute<Boolean>(false, { a, b -> a || b }, ::implies)
-        object empty : Attribute<Boolean>(true, { a, b -> a && b }, ::follows)
+        private fun follows(a: Boolean, b: Boolean) =
+                (!b) || a
+
+        private fun subsetOf(a: Set<TokenPattern>, b: Set<TokenPattern>) =
+                a subsetOf b
+
+        override val first = object : Attribute<SortedSet<TokenPattern>>(
+                bottom = SortedSet(),
+                join = { a, b -> SortedSet(a + b) },
+                wt = ::subsetOf,
+                attributes = this
+        ) {}
+
+        override val firstc = object : Attribute<SortedSet<TokenPattern>>(
+                bottom = SortedSet(),
+                join = { a, b -> SortedSet(a + b) },
+                wt = ::subsetOf,
+                attributes = this
+        ) {}
+
+        override val nullable = object : Attribute<Boolean>(
+                bottom = false,
+                join = { a, b -> a || b },
+                wt = ::implies,
+                attributes = this
+        ) {}
+
+        override val nullablec = object : Attribute<Boolean>(
+                bottom = false,
+                join = { a, b -> a || b },
+                wt = ::implies,
+                attributes = this
+        ) {}
+
+        override val empty = object : Attribute<Boolean>(
+                bottom = true,
+                join = { a, b -> a && b },
+                wt = ::follows,
+                attributes = this
+        ) {}
 
         private fun updateAttributes() {
             nullable.update()
@@ -190,19 +255,22 @@ abstract class Pattern {
             firstc.update()
         }
 
-        private fun fix() {
-            generation = FixedPoint.generation
-            if (FixedPoint.master === null) {
+        override fun fix() {
+            this.generation = FixedPoint.generation()
+            if (FixedPoint.master() === null) {
+                FixedPoint.master(this)
                 do {
-                    FixedPoint.generation += 1
-                    FixedPoint.changed = false
+                    FixedPoint.incGeneration()
+                    FixedPoint.changed(false)
                     updateAttributes()
-                } while (FixedPoint.changed)
-                FixedPoint.stabilized = true
-                FixedPoint.generation += 1
+                } while (FixedPoint.changed())
+                FixedPoint.stabilized(true)
+                FixedPoint.incGeneration()
                 updateAttributes()
                 FixedPoint.reset()
-            } else updateAttributes()
+            } else {
+                updateAttributes()
+            }
         }
     }
 }
@@ -212,46 +280,21 @@ abstract class Pattern {
  *
  * In case there are fixed points running in multiple threads, each attribute is thread-local.
  */
-private object FixedPoint {
-    var stabilized = false
-    var running = false
-    var changed = false
-    var generation = 0
-    var master: Any? = null
-
-    fun reset() {
-        stabilized = false
-        running = false
-        master = null
-        changed = false
-        generation = 0
-    }
-}
+private val FixedPoint: IFP = FP()
 
 /**
  * Represents the union of two context-free patterns.
  */
 data class AltPattern(private val pat1: Pattern, private val pat2: Pattern) : Pattern() {
-    init {
-        attributes.nullable `ː=` { pat1.nullable || pat2.nullable }
-        attributes.nullablec `ː=` { pat1.nullablec || pat2.nullablec }
-        attributes.empty `ː=` { pat1.empty || pat2.empty }
-        attributes.first `ː=` { SortedSet(pat1.first + pat2.first) }
-        attributes.firstc `ː=` { SortedSet(pat1.firstc + pat2.firstc) }
-    }
-
     override fun derivative(c: TokenTag): Pattern =
             pat1 derive c `||` pat2 derive c
 
-    override fun hashCode(): Int = 2 * pat1.hashCode() + pat2.hashCode()
-    override fun toString(): String = "$pat1 | $pat2"
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as AltPattern
-        if (pat1 != other.pat1) return false
-        if (pat2 != other.pat2) return false
-        return true
+    init {
+        attributes.nullable `ː=` { pat1.nullable || pat2.nullable }
+        attributes.nullablec `ː=` { pat1.nullablec || pat2.nullablec }
+        attributes.empty `ː=` { pat1.empty && pat2.empty }
+        attributes.first `ː=` { SortedSet(pat1.first + pat2.first) }
+        attributes.firstc `ː=` { SortedSet(pat1.firstc + pat2.firstc) }
     }
 }
 
@@ -259,6 +302,12 @@ data class AltPattern(private val pat1: Pattern, private val pat2: Pattern) : Pa
  * Represents the concatenation of two context-free patterns.
  */
 data class ConPattern(private val pat1: Pattern, private val pat2: Pattern) : Pattern() {
+    override fun derivative(c: TokenTag): Pattern =
+            if (pat1.nullable)
+                pat1 derive c `~~` pat2 `||` pat2 derive c
+            else
+                pat1 derive c `~~` pat2
+
     init {
         attributes.nullable `ː=` { pat1.nullable && pat2.nullable }
         attributes.nullablec `ː=` { pat1.nullablec && pat2.nullablec }
@@ -272,45 +321,20 @@ data class ConPattern(private val pat1: Pattern, private val pat2: Pattern) : Pa
             else pat1.firstc
         }
     }
-
-    override fun derivative(c: TokenTag): Pattern =
-            if (pat1.nullable)
-                pat1 derive c `~~` pat2 `||` pat2 derive c
-            else
-                pat1 derive c `~~` pat2
-
-    override fun hashCode(): Int = 2 * pat1.hashCode() + pat2.hashCode()
-    override fun toString(): String = "$pat1 ~ $pat2"
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as ConPattern
-        if (pat1 != other.pat1) return false
-        if (pat2 != other.pat2) return false
-        return true
-    }
 }
 
 /**
  * Represents zero or more repetitions of a context-free pattern.
  */
 data class RepPattern(private val pat: Pattern) : Pattern() {
+    override fun derivative(c: TokenTag): Pattern = pat derive c `~~` this
+
     init {
         attributes.nullable `ː==` true
         attributes.nullablec `ː==` true
         attributes.empty `ː==` false
         attributes.first `ː=` { pat.first }
         attributes.firstc `ː=` { pat.firstc }
-    }
-
-    override fun derivative(c: TokenTag): Pattern = pat derive c `~~` this
-    override fun hashCode(): Int = pat.hashCode()
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as RepPattern
-        if (pat != other.pat) return false
-        return true
     }
 }
 
@@ -318,24 +342,15 @@ data class RepPattern(private val pat: Pattern) : Pattern() {
  * Represents zero or one instances of the supplied pattern.
  */
 data class OptPattern(private val pat: Pattern) : Pattern() {
+    override fun derivative(c: TokenTag): Pattern =
+            pat derive c
+
     init {
         attributes.nullable `ː==` true
         attributes.nullablec `ː==` true
         attributes.empty `ː==` false
         attributes.first `ː=` { pat.first }
         attributes.firstc `ː=` { pat.firstc }
-    }
-
-    override fun derivative(c: TokenTag): Pattern =
-            pat derive c
-
-    override fun hashCode(): Int = pat.hashCode()
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as OptPattern
-        if (pat != other.pat) return false
-        return true
     }
 }
 
@@ -353,6 +368,20 @@ data class TokenPattern(val tag: TokenTag,
 
     constructor(token: Token) : this(token.tag, token.isParsingMarker)
 
+    /**
+     * @return true iff this pattern matches the given token tag.
+     */
+    infix fun matches(c: TokenTag): Boolean = tag == c
+
+    private val tagString: String by lazy { tag.toString() }
+
+    override fun derivative(c: TokenTag): Pattern =
+            if (this matches c) Eps
+            else EmptyPattern
+
+    override fun compareTo(other: TokenPattern): Int =
+            tagString.compareTo(other.tagString)
+
     init {
         attributes.nullable `ː==` false
         attributes.nullablec `ː==` this.isParsingMarker
@@ -364,35 +393,16 @@ data class TokenPattern(val tag: TokenTag,
                 else
                     SortedSet(this)
     }
-
-    /**
-     * @return true iff this pattern matches the given token tag.
-     */
-    infix fun matches(c: TokenTag): Boolean = tag == c
-
-    override fun derivative(c: TokenTag): Pattern =
-            if (this matches c) Eps
-            else EmptyPattern
-
-    override fun compareTo(other: TokenPattern): Int =
-            tag.toString().compareTo(other.tag.toString())
-
-    override fun toString(): String = tag.toString()
-    override fun hashCode(): Int = tag.hashCode()
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as TokenPattern
-        if (tag != other.tag) return false
-        if (isParsingMarker != other.isParsingMarker) return false
-        return true
-    }
 }
 
 /**
  * A pattern representing the language with only the empty string in it.
  */
 object Eps : Pattern() {
+    override fun derivative(c: TokenTag): EmptyPattern = EmptyPattern
+    override fun derive(c: TokenTag): EmptyPattern = EmptyPattern
+    override fun hashCode(): Int = 1
+
     init {
         attributes.nullable `ː==` true
         attributes.nullablec `ː==` true
@@ -400,10 +410,6 @@ object Eps : Pattern() {
         attributes.firstc `ː==` SortedSet()
         attributes.empty `ː==` false
     }
-
-    override fun derivative(c: TokenTag): Pattern = EmptyPattern
-    override fun derive(c: TokenTag): Pattern = EmptyPattern
-    override fun hashCode(): Int = 1
 }
 
 /**
@@ -411,6 +417,9 @@ object Eps : Pattern() {
  * is the unmatchable pattern.
  */
 object EmptyPattern : Pattern() {
+    override fun derivative(c: TokenTag): EmptyPattern = EmptyPattern
+    override fun hashCode(): Int = 2
+
     init {
         attributes.nullable `ː==` false
         attributes.nullablec `ː==` false
@@ -418,9 +427,6 @@ object EmptyPattern : Pattern() {
         attributes.firstc `ː==` SortedSet()
         attributes.empty `ː==` true
     }
-
-    override fun derivative(c: TokenTag): Pattern = EmptyPattern
-    override fun hashCode(): Int = 2
 }
 
 /**
@@ -435,6 +441,7 @@ open class GenericPattern : Pattern() {
         @return the next available id for a generic pattern.
          */
         val nextId: Int
+            @Synchronized
             get() {
                 id += 1
                 return id
@@ -450,24 +457,16 @@ open class GenericPattern : Pattern() {
     /**
      * Sets the rules that define this pattern.
      */
-    infix fun `||=`(r: Pattern) {
+    infix fun `ːː=`(r: Pattern) {
         _rules = r cons _rules
     }
 
     /**
      * The unique id of this pattern.
      */
-    val id = nextId
+    private val id by lazy { GenericPattern.nextId }
 
     override infix fun derivative(c: TokenTag): GenericPattern = Derivative(this, c)
-
-    init {
-        attributes.nullable `ː=` { rules.any(Pattern::nullable) }
-        attributes.nullablec `ː=` { rules.any(Pattern::nullablec) }
-        attributes.empty `ː=` { rules.all(Pattern::empty) }
-        attributes.first `ː=` { rules.fold(SortedSet()) { t, p -> SortedSet(t + p.first) } }
-        attributes.firstc `ː=` { rules.fold(SortedSet()) { t, p -> SortedSet(t + p.firstc) } }
-    }
 
     override fun equals(other: Any?): Boolean =
             if (other is GenericPattern) other.id == this.id
@@ -475,6 +474,14 @@ open class GenericPattern : Pattern() {
 
     override fun hashCode(): Int = id
     override fun toString(): String = "N$id"
+
+    init {
+        attributes.nullable `ː=` { this.rules.any(Pattern::nullable) }
+        attributes.nullablec `ː=` { this.rules.any(Pattern::nullablec) }
+        attributes.empty `ː=` { this.rules.all(Pattern::empty) }
+        attributes.first `ː=` { this.rules.fold(SortedSet()) { t, p -> SortedSet(t + p.first) } }
+        attributes.firstc `ː=` { this.rules.fold(SortedSet()) { t, p -> SortedSet(t + p.firstc) } }
+    }
 }
 
 /**
@@ -484,19 +491,11 @@ open class GenericPattern : Pattern() {
  * @param c the tag with respect to which the derivative is taken.
  */
 data class Derivative(private val base: GenericPattern, private val c: TokenTag) : GenericPattern() {
-    override val rules by lazy { base.rules.map { it derive c } }
-
-    override fun hashCode(): Int = 2 * base.hashCode() + c.hashCode()
-    override fun toString(): String = "D{$c}"
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        if (!super.equals(other)) return false
-        other as Derivative
-        if (base != other.base) return false
-        if (c != other.c) return false
-        return true
+    override val rules by lazy {
+        base.rules.map { r -> r derive c }
     }
+
+    override fun toString(): String = "D{$c}"
 }
 
 /**
@@ -508,7 +507,7 @@ data class Derivative(private val base: GenericPattern, private val c: TokenTag)
  */
 abstract class ParsingMark : Token() {
     override val isParsingMarker = true
-    override val tag: ParsingMark get() = this
+    override val tag: ParsingMark by lazy { this }
 }
 
 /**
@@ -517,7 +516,11 @@ abstract class ParsingMark : Token() {
  * grammar called for parsing the empty string.
  */
 object HardEps : ParsingMark() {
-    override fun localCompare(other: Token): Int = 0
+    override fun localCompare(other: Token): Int = when (other) {
+        is HardEps -> 0
+        else -> throw IllegalStateException("this should not be")
+    }
+
     override fun toString() = "[e]"
     override fun hashCode() = 3
 }
@@ -529,18 +532,20 @@ object HardEps : ParsingMark() {
  * @param f  the function to construct the tree node from its leaves.
  * @param id the unique id of this reduction rule.
  */
-data class OpenRed(private val f: (Any) -> Any, private val id: Int) : ParsingMark() {
+data class OpenRed(private val f: (Any) -> Any, val id: Int) : ParsingMark() {
     override fun localCompare(other: Token): Int {
         other as OpenRed
         return id.compareTo(other.id)
     }
 
-    override fun equals(other: Any?): Boolean =
-            if (other is OpenRed) id == other.id
-            else false
+    override fun toString(): String = "<${f.hashCode()}|"
+
+    override fun equals(other: Any?): Boolean = when (other) {
+        is OpenRed -> other.id == this.id
+        else -> false
+    }
 
     override fun hashCode(): Int = f.hashCode()
-    override fun toString(): String = "<${f.hashCode()}|"
 }
 
 /**
@@ -550,25 +555,31 @@ data class OpenRed(private val f: (Any) -> Any, private val id: Int) : ParsingMa
  * Open/close reduction markers match like balanced parentheses in a
  * correct parse string.
  */
-data class CloseRed(private val f: (Any) -> Any, private val id: Int) : ParsingMark() {
+data class CloseRed(val f: (Any) -> Any, val id: Int) : ParsingMark() {
     override fun localCompare(other: Token): Int {
         other as CloseRed
         return id.compareTo(other.id)
     }
 
-    override fun equals(other: Any?): Boolean =
-            if (other is CloseRed) id == other.id
-            else false
+    override fun toString(): String = "|${f.hashCode()}>"
+
+    override fun equals(other: Any?): Boolean = when (other) {
+        is CloseRed -> other.id == this.id
+        else -> false
+    }
 
     override fun hashCode(): Int = f.hashCode()
-    override fun toString(): String = "|${f.hashCode()}>"
 }
 
 /**
  * Open/close repetition parsing markers indicate that the nodes between should be converted into a list.
  */
 object OpenRep : ParsingMark() {
-    override fun localCompare(other: Token): Int = 0
+    override fun localCompare(other: Token): Int = when (other) {
+        is OpenRep -> 0
+        else -> throw IllegalStateException("this should not be")
+    }
+
     override fun hashCode(): Int = 1
     override fun toString(): String = "<*|"
 }
@@ -577,7 +588,11 @@ object OpenRep : ParsingMark() {
  * Open/close repetition parsing markers indicate that the nodes between should be converted into a list.
  */
 object CloseRep : ParsingMark() {
-    override fun localCompare(other: Token): Int = 0
+    override fun localCompare(other: Token): Int = when (other) {
+        is CloseRep -> 0
+        else -> throw IllegalStateException("this should not be")
+    }
+
     override fun hashCode(): Int = 2
     override fun toString(): String = "|*>"
 }
@@ -587,7 +602,11 @@ object CloseRep : ParsingMark() {
  * any) should be converted to an <code>Option</code>.
  */
 object OpenOpt : ParsingMark() {
-    override fun localCompare(other: Token): Int = 0
+    override fun localCompare(other: Token): Int = when (other) {
+        is OpenOpt -> 0
+        else -> throw IllegalStateException("this should not be")
+    }
+
     override fun hashCode(): Int = 1
     override fun toString(): String = "<?|"
 }
@@ -597,7 +616,11 @@ object OpenOpt : ParsingMark() {
  * any) should be converted to an <code>Option</code>.
  */
 object CloseOpt : ParsingMark() {
-    override fun localCompare(other: Token): Int = 0
+    override fun localCompare(other: Token): Int = when (other) {
+        is CloseOpt -> 0
+        else -> throw IllegalStateException("this should not be")
+    }
+
     override fun hashCode(): Int = 2
     override fun toString(): String = "|?>"
 }
@@ -615,12 +638,11 @@ data class ParsingState<T : Token>(val lang: Pattern,
                                    val parse: List<Token>,
                                    val input: LiveStream<T>) {
 
-    private val firstMarks: Set<ParsingMark>
-        get() {
-            val first = lang.first
-            val tokens = first.filter(TokenPattern::isParsingMarker)
-            return tokens.map { it.tag as ParsingMark }.toSet()
-        }
+    private val firstMarks: Set<ParsingMark> by lazy {
+        val first = lang.first
+        val tokens = SortedSet(first.filter(TokenPattern::isParsingMarker))
+        tokens.map { it.tag as ParsingMark }.toSet()
+    }
 
     /**
      * @return true iff this state can consume a parsing marker.
@@ -640,22 +662,27 @@ data class ParsingState<T : Token>(val lang: Pattern,
     /**
      * @return the state that results from consuming the head of the input, if any.
      */
-    val nextConsume: ParsingState<T>?
+    val nextConsume: Option<ParsingState<T>>
         get() {
-            val (c, rest) =
-                    if (input.isPlugged) null to null
-                    else input.head to input.tail
+            val (c, rest) = when (val d = LiveHT unapply input) {
+                is Some -> d()
+                is None -> d.unapply
+            }
 
             return when {
-                c !== null && rest !== null -> {
-                    val newLang = lang derive c.tag
-                    val newParseString: List<Token> = c cons parse
-                    if (!newLang.empty) ParsingState(newLang, newParseString, rest)
-                    else null
-                }
                 input.isEmpty -> throw IllegalStateException("can't consume -- end of input")
                 input.isPlugged -> throw IllegalStateException("can't consume on a plugged stream")
-                else -> throw IllegalStateException("this should not be")
+                else -> {
+                    c as T
+                    rest as LiveStream<T>
+                    val newLang = lang derive c.tag
+                    val newParseString: List<Token> = c cons parse
+
+                    if (!newLang.empty)
+                        Some(ParsingState(newLang, newParseString, rest))
+                    else
+                        None
+                }
             }
         }
     /**
@@ -692,21 +719,65 @@ data class ParsingState<T : Token>(val lang: Pattern,
         }
 
     override fun toString(): String =
-            "lang: $lang\nparse: $parse\ninput: $input"
+            "lang: $lang\nparse: ${parse.reversed}\ninput: $input"
 
     /**
      * Takes a step toward converting a parse string into a parse tree.
      */
+    @Suppress("UNCHECKED_CAST")
     private fun reduceStep(stack: List<Any>, parseString: List<Token>): Pair<List<Any>, List<Token>> {
         val combine: (Any, List<Any>, List<Token>) -> Pair<List<Any>, List<Token>> =
                 { newTop: Any, _stack: List<Any>, rest: List<Token> ->
-                    emptyList<Any>() to emptyList<Token>()
+                    val hd = _stack.head
+                    val tl = _stack.tail
+                    when {
+                        hd is CloseRed || hd is CloseRep || hd is CloseOpt -> listOf(newTop, hd) cons tl to rest
+                        stack.isEmpty() -> newTop.toListOf() to rest
+                        else -> ParSeq(newTop, hd) cons tl to rest
+                    }
                 }
-        val reassociate: (Any) -> Any = { data ->
-            data
+
+        fun reassociate(data: Any): Any {
+            val (a, _b) = when (data) {
+                is ParSeq<*, *> -> data.first to data.second
+                else -> null to null
+            }
+            val (b, rest) = when (_b) {
+                is ParSeq<*, *> -> _b.first to _b.second
+                else -> null to null
+            }
+            return when {
+                a !== null && b !== null -> reassociate(ParSeq(ParSeq(a, b), rest))
+                data is ParSeq<*, *> -> data
+                else -> data
+            }
         }
 
-        throw IllegalStateException("bug: over-parsed")
+        val (_s1, _s2, _st) = stack unApply 3
+        val (_ph, _pt) = parseString unApply 2
+
+        val s1 = if (_s1 is Some<*>) _s1() ?: throw NullPointerException() else None
+        val s2 = if (_s2 is Some<*>) _s2() ?: throw NullPointerException() else None
+        val st = if (_st is Some<*>) _st() as List<Any> else emptyList()
+
+        val ph = if (_ph is Some<*>) _ph() ?: throw NullPointerException() else None
+        val pt = if (_pt is Some<*>) _pt() as List<Token> else emptyList()
+
+        return when {
+            ph is CloseRed || ph is CloseRep || ph is CloseOpt -> ph cons stack to pt
+            ph is HardEps -> combine(Unit, stack, pt)
+            s2 is CloseRed && ph is OpenRed && (s2.id == ph.id) -> {
+                val r = reassociate(s1)
+                combine(s2.f(r), st, pt)
+            }
+            s1 is CloseRep && ph is OpenRep -> combine(emptyList<Any>(), pt, st as List<Token>)
+            s2 is CloseRep && ph is OpenRep -> combine(s1.toListOf(), st, pt)
+            s1 is CloseOpt && ph is OpenOpt -> combine(None, st, pt)
+            s2 is CloseOpt && ph is OpenOpt -> combine(Some(s1), st, pt)
+            s1 is CloseRed || s1 is CloseRep || s1 is CloseOpt -> combine(ph, s1 cons st, pt)
+            stack.isNotEmpty() && parseString.isEmpty() -> throw IllegalStateException("bug, over-parsed")
+            else -> combine(ParSeq(ph, s1), st, pt)
+        }
     }
 
     /**
@@ -731,7 +802,7 @@ data class ParsingState<T : Token>(val lang: Pattern,
  * The high-priority states should consume a character; the low-priority
  * states should consume a parsing mark.
  */
-class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
+class ParsingMachine<T : Token>(private val lang: Pattern, private val input: LiveStream<T>) {
     /**
      * High-priority to-do list for configurations which could consume a character.
      */
@@ -751,12 +822,6 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
      */
     val output: LiveStream<ParsingState<T>> = LiveStream(finalSource)
 
-    init {
-        input.source.addListener { search() }
-        // In case any input is ready, search:
-        search()
-    }
-
     /**
      * Returns the newest frontier states in the parsing state search
      * space.
@@ -765,7 +830,7 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
         highTodo.isNotEmpty() && highTodo.head.canConsume -> {
             val next = highTodo.head
             highTodo = highTodo.tail
-            next.nextConsume?.toListOf()
+            next.nextConsume
         }
         lowTodo.isNotEmpty() && !lowTodo.head.lang.empty -> {
             val next = lowTodo.head
@@ -781,8 +846,10 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
     private fun search() {
         while (highTodo.isNotEmpty() || lowTodo.isNotEmpty()) {
             val newConfs = nextStates()
-            highTodo = newConfs?.filter { it.lang.firstc.isNotEmpty() }?.plus(highTodo) ?: emptyList()
-            lowTodo = newConfs?.filter { it.hasMarks }?.plus(lowTodo) ?: emptyList()
+
+            highTodo += (newConfs?.filter { it.lang.firstc.isNotEmpty() }) ?: emptyList()
+            lowTodo += (newConfs?.filter { it.hasMarks }) ?: emptyList()
+
             var foundFinal = false
             newConfs?.forEach { conf ->
                 if (conf.isFinal) {
@@ -793,6 +860,12 @@ class ParsingMachine<T : Token>(lang: Pattern, input: LiveStream<T>) {
             // Pause search when we've found at least one final state
             if (foundFinal) return
         }
+    }
+
+    init {
+        input.source.addListener { search() }
+        // In case any input is ready, search:
+        search()
     }
 }
 
@@ -825,7 +898,7 @@ abstract class Parser<A> {
     /**
      * @return a parser which may parse what this parser parses.
      */
-    val `?`: Parser<A?> get() = OptParser(this)
+    val `?`: Parser<Option<A>> get() = OptParser(this)
 
     /**
      * @return a parser that parses what this parser parses, but converts the result.
@@ -835,13 +908,13 @@ abstract class Parser<A> {
     /**
      * @return a context-free pattern that matches the parse strings describe by this parser.
      */
-    abstract fun compile(): Pattern
+    abstract val compile: Pattern
 
     /**
      * @return a parsing machine for this parser on the specified input.
      */
     private fun <T : Token> machine(input: LiveStream<T>): ParsingMachine<T> =
-            ParsingMachine(this.compile(), input)
+            ParsingMachine(this.compile, input)
 
     /**
      * Returns the parse tree from completely consuming the input for this parse.
@@ -878,7 +951,7 @@ abstract class Parser<A> {
         val m = machine(input)
         val finals = m.output
         val state = finals.head
-        return state.reduce() as A to state.input
+        return (state.reduce() as A) to state.input
     }
 
     fun <T : Token> parse(input: Iterable<T>): Pair<A, LiveStream<T>> =
@@ -904,78 +977,91 @@ open class GenericParser<A> : Parser<A>() {
      * Compiles a parser into context-free pattern, such that when the context-free pattern
      * is given to a parsing machine, the parsing machine produces parse trees.
      */
-    override fun compile(): GenericPattern {
-        if (compileCache !== null)
+    override val compile: GenericPattern
+        get() {
+            if (compileCache !== null)
+                return compileCache ?: throw NullPointerException()
+
+            compileCache = GenericPattern()
+            rules.forEach { pat ->
+                val cc = compileCache ?: throw NullPointerException()
+                cc `ːː=` pat.compile
+            }
+
             return compileCache ?: throw NullPointerException()
-
-        compileCache = GenericPattern()
-        rules.forEach { pat ->
-            val cc = compileCache ?: throw NullPointerException()
-            cc `||=` pat.compile()
         }
-
-        return compileCache ?: throw NullPointerException()
-    }
 }
 
 /**
  * Matches tokens with the specified tag.
  */
 data class TokenParser(val tag: String) : Parser<Token>() {
-    override fun compile(): Pattern = TokenPattern(tag = tag, isParsingMarker = false)
+    override val compile: Pattern
+            by lazy { TokenPattern(tag = tag, isParsingMarker = false) }
 }
 
 /**
  * Matches strings of length 0.
  */
 object EpsParser : Parser<Unit>() {
-    override fun compile(): Pattern = TokenPattern(HardEps)
+    override val compile: Pattern
+            by lazy { TokenPattern(HardEps) }
 }
 
 /**
  * Cannot match any strings.
  */
 object EmptyParser : Parser<Nothing>() {
-    override fun compile(): Pattern = EmptyPattern
+    override val compile: Pattern
+            by lazy { EmptyPattern }
 }
 
 /**
  * A parser representing the concatenation of two parsers.
  */
-class ConParser<A, B>(private val pat1: Parser<A>,
-                      private val pat2: Parser<B>) : Parser<ParSeq<A, B>>() {
-    override fun compile(): Pattern = ConPattern(pat1.compile(), pat2.compile())
+data class ConParser<A, B>(private val pat1: Parser<A>,
+                           private val pat2: Parser<B>) : Parser<ParSeq<A, B>>() {
+    override val compile: Pattern
+            by lazy { ConPattern(pat1.compile, pat2.compile) }
 }
 
 /**
  * A parser representing the union of two parsers.
  */
-class AltParser<A>(private val pat1: Parser<A>,
-                   private val pat2: Parser<A>) : Parser<A>() {
-    override fun compile(): Pattern = AltPattern(pat1.compile(), pat2.compile())
+data class AltParser<A>(private val pat1: Parser<A>,
+                        private val pat2: Parser<A>) : Parser<A>() {
+    override val compile: Pattern by lazy {
+        AltPattern(pat1.compile, pat2.compile)
+    }
 }
 
 /**
  * A parser representing the possibly-empty repetition of another parser.
  */
-class RepParser<A>(private val pat: Parser<A>) : Parser<List<A>>() {
-    override fun compile(): Pattern {
-        val openTP = TokenPattern(OpenRep)
-        val optPat = RepPattern(pat.compile())
-        val closeTP = TokenPattern(CloseRep)
-        return ConPattern(openTP, ConPattern(optPat, closeTP))
+data class RepParser<A>(private val pat: Parser<A>) : Parser<List<A>>() {
+    override val compile: Pattern by lazy {
+        ConPattern(
+                pat1 = TokenPattern(OpenRep),
+                pat2 = ConPattern(
+                        pat1 = RepPattern(pat.compile),
+                        pat2 = TokenPattern(CloseRep)
+                )
+        )
     }
 }
 
 /**
  * A parser representing zero or one instances of another parser.
  */
-class OptParser<A>(private val pat: Parser<A>) : Parser<A?>() {
-    override fun compile(): Pattern {
-        val openTP = TokenPattern(OpenOpt)
-        val optPat = OptPattern(pat.compile())
-        val closeTP = TokenPattern(CloseOpt)
-        return ConPattern(openTP, ConPattern(optPat, closeTP))
+data class OptParser<A>(private val pat: Parser<A>) : Parser<Option<A>>() {
+    override val compile: Pattern by lazy {
+        ConPattern(
+                pat1 = TokenPattern(OpenOpt),
+                pat2 = ConPattern(
+                        pat1 = OptPattern(pat.compile),
+                        pat2 = TokenPattern(CloseOpt)
+                )
+        )
     }
 }
 
@@ -998,10 +1084,14 @@ class RedParser<A, B>(private val pat: Parser<A>,
     private val g: (Any) -> Any = f as (Any) -> Any
     private val id by lazy { Reduction.nextId }
 
-    override fun compile(): Pattern {
-        val openTP = TokenPattern(OpenRed(g, id))
-        val closeTP = TokenPattern(CloseRed(g, id))
-        return ConPattern(openTP, ConPattern(pat.compile(), closeTP))
+    override val compile: Pattern by lazy {
+        ConPattern(
+                pat1 = TokenPattern(OpenRed(g, id)),
+                pat2 = ConPattern(
+                        pat1 = pat.compile,
+                        pat2 = TokenPattern(CloseRed(g, id))
+                )
+        )
     }
 }
 

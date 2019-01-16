@@ -2,7 +2,10 @@
 
 package klisp.parser.derivative
 
+import klisp.None
+import klisp.Option
 import klisp.Queue
+import klisp.Some
 import klisp.cons
 
 /**
@@ -70,7 +73,7 @@ class LiveStreamSource<A> {
  * A live stream is a stream whose tail may grow over time.
  * Every stream has a source which determines its tail.
  */
-data class LiveStream<A>(val source: LiveStreamSource<A>) {
+open class LiveStream<A>(open val source: LiveStreamSource<A>) {
     companion object {
         operator fun invoke(s: String): LiveStream<Char> {
             val src = LiveStreamSource<Char>()
@@ -87,13 +90,13 @@ data class LiveStream<A>(val source: LiveStreamSource<A>) {
         }
     }
 
-    private var headCache: A? = null
-    private var tailCache: LiveStream<A>? = null
+    private var headCache: Option<A> = None
+    private var tailCache: Option<LiveStream<A>> = None
 
     /**
      * @return true if this object is currently the last element in a stream.
      */
-    val isPlugged get() = headCache === null && !source.hasNext
+    val isPlugged get() = headCache.isEmpty && !source.hasNext
 
     /**
      * @return true if this object is the last element in a stream, and the source is terminated.
@@ -104,12 +107,15 @@ data class LiveStream<A>(val source: LiveStreamSource<A>) {
      * @return if not plugged, the object at this location in the stream.
      */
     val head: A
-        get() = if (headCache !== null)
-            headCache ?: throw NullPointerException()
-        else {
-            if (isPlugged) throw IllegalStateException("can't pull a plugged head")
-            headCache = source.next() ?: throw NullPointerException()
-            headCache ?: throw NullPointerException()
+        get() = when (val hc = headCache) {
+            is Some -> hc()
+            is None -> {
+                if (isPlugged)
+                    throw IllegalStateException("can't pull a plugged head")
+                val value = Some(source.next())
+                headCache = value
+                value()
+            }
         }
 
     /**
@@ -118,13 +124,13 @@ data class LiveStream<A>(val source: LiveStreamSource<A>) {
     val tail
         get() = if (isPlugged)
             throw IllegalStateException("can't pull a plugged tail")
-        else {
-            if (tailCache !== null)
-                tailCache ?: throw NullPointerException()
-            else {
-                this.head
-                tailCache = LiveStream(source)
-                tailCache ?: throw NullPointerException()
+        else when (val tc = tailCache) {
+            is Some -> tc()
+            is None -> {
+                head
+                val value = Some(LiveStream(source))
+                tailCache = value
+                value()
             }
         }
 
@@ -135,3 +141,22 @@ data class LiveStream<A>(val source: LiveStreamSource<A>) {
     }
 }
 
+data class LiveHT<A>(val head: A, val tail: LiveStream<A>?) {
+    companion object {
+        infix fun <A> unapply(ls: LiveStream<A>): Option<Pair<A, LiveStream<A>>> =
+                if (ls.isPlugged) None
+                else Some(ls.head to ls.tail)
+    }
+}
+
+object LiveNil {
+    infix fun <A> unapplySeq(ls: LiveStream<A>): Option<List<A>> =
+            if (ls.isEmpty) Some(emptyList())
+            else None
+}
+
+object LivePlug {
+    infix fun <A> unapplySeq(ls: LiveStream<A>): Option<List<A>> =
+            if (ls.isPlugged) Some(emptyList())
+            else None
+}

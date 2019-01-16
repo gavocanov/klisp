@@ -25,7 +25,29 @@ interface IQueue<T> {
 
 expect class Queue<T>() : IQueue<T>
 
-expect class SortedSet<T : Comparable<T>>() : Set<T> {
+expect class FirstSet<T : Comparable<T>>() : Set<T> {
+    constructor(from: T)
+}
+
+expect open class SortedSet<T : Comparable<T>>() : Set<T> {
     constructor(from: Collection<T>)
     constructor(from: T)
 }
+
+interface IFP {
+    fun stabilized(): Boolean
+    fun running(): Boolean
+    fun changed(): Boolean
+    fun generation(): Int
+    fun master(): Any?
+
+    fun stabilized(v: Boolean)
+    fun running(v: Boolean)
+    fun changed(v: Boolean)
+    fun incGeneration()
+    fun master(v: Any?)
+
+    fun reset()
+}
+
+expect class FP() : IFP

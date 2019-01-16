@@ -9,7 +9,6 @@ import org.jline.utils.AttributedStyle
 import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.ArrayDeque
-import java.util.SortedSet
 import java.util.TreeSet
 
 val HISTORY = DefaultHistory()
@@ -107,8 +106,45 @@ actual class Queue<T> actual constructor() : IQueue<T> {
             q.plusAssign(a)
 }
 
-actual class SortedSet<T : Comparable<T>>(private val set: TreeSet<T> = TreeSet()) : SortedSet<T> by set, Set<T> {
-    actual constructor() : this(TreeSet())
-    actual constructor(from: Collection<T>) : this(TreeSet(from.sorted()))
-    actual constructor(from: T) : this(TreeSet(listOf(from).sorted()))
+actual class FirstSet<T : Comparable<T>> : TreeSet<T>, Set<T> {
+    actual constructor() : super()
+    actual constructor(from: T) : super(setOf(from).sorted())
+}
+
+actual open class SortedSet<T : Comparable<T>> : TreeSet<T>, Set<T> {
+    actual constructor()
+    actual constructor(from: Collection<T>) : super(from.sorted())
+    actual constructor(from: T) : super(setOf(from).sorted())
+}
+
+actual class FP actual constructor() : IFP {
+    private var stabilized = ThreadLocal<Boolean>()
+    private var running = ThreadLocal<Boolean>()
+    private var changed = ThreadLocal<Boolean>()
+    private var generation = ThreadLocal<Int>()
+    private var master = ThreadLocal<Any?>()
+
+    override fun stabilized(): Boolean = stabilized.get()
+    override fun running(): Boolean = running.get()
+    override fun changed(): Boolean = changed.get()
+    override fun generation(): Int = generation.get()
+    override fun master(): Any? = master.get()
+
+    override fun stabilized(v: Boolean) = stabilized.set(v)
+    override fun running(v: Boolean) = running.set(v)
+    override fun changed(v: Boolean) = changed.set(v)
+    override fun incGeneration() = generation.set(generation() + 1)
+    override fun master(v: Any?) = master.set(v)
+
+    init {
+        reset()
+    }
+
+    override fun reset() {
+        stabilized.set(false)
+        running.set(false)
+        changed.set(false)
+        generation.set(0)
+        master.set(null)
+    }
 }

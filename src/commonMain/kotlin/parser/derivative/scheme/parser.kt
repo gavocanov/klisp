@@ -1,58 +1,65 @@
 package klisp.parser.derivative.scheme
 
 import klisp.Memoize
+import klisp.None
+import klisp.Some
 import klisp.cons
 import klisp.parser.derivative.BooleanToken
 import klisp.parser.derivative.GenericParser
 import klisp.parser.derivative.IntToken
 import klisp.parser.derivative.LiveStream
-import klisp.parser.derivative.ParSeq
+import klisp.parser.derivative.LiveStreamSource
+import klisp.parser.derivative.ParsingMachine
+import klisp.parser.derivative.PunctToken
 import klisp.parser.derivative.StringToken
 import klisp.parser.derivative.SymbolToken
 import klisp.parser.derivative.Token
 import klisp.parser.derivative.TokenParser
+import klisp.unApply
 
 object SXParser {
     val SX = GenericParser<SExp>()
     private val SXList = GenericParser<List<SExp>>()
     private val Char.P: TokenParser get() = TokenParser(this.toString())
-    private val LIST_OR_PLIST: (ParSeq<ParSeq<ParSeq<Token, List<SExp>>, Token>, SExp?>) -> SExp = { p ->
-        val (f, s) = p
-        val l = f.first.second
-        when {
-            s === null -> SExp.apply(l)
-            else -> SExp.apply(l, s)
-        }
-    }
 
     init {
         // @formatter:off
-        SX     `ːː=` ('('.P `~` SXList `~` '.'.P `~` SX.`?` `==▷` LIST_OR_PLIST)
-        SX     `ːː=` (TokenParser(SymbolToken.tag)          `==▷` { SName.from((it as SymbolToken).value) })
-        SX     `ːː=` (TokenParser(IntToken.tag)             `==▷` { SInt((it as IntToken).value) })
-        SX     `ːː=` (TokenParser(StringToken.tag)          `==▷` { SText((it as StringToken).value) })
-        SX     `ːː=` (TokenParser(BooleanToken.tag)         `==▷` { SBoolean((it as BooleanToken).value) })
-        SXList `ːː=` SX.`*`
+        SX `ːː=` ('('.P `~` SXList `~` (('.'.P `~` SX).`?`) `~` ')'.P `==▷` { (f, _) ->
+            val s = f.second
+            val l = f.first.second
+            when(s) {
+                is None -> SExp.apply(l)
+                is Some -> SExp.apply(l, s().second)
+            }
+        })
+
+        SX `ːː=` (TokenParser(SymbolToken.tag)  `==▷` { SName.from((it as SymbolToken).value) })
+        SX `ːː=` (TokenParser(IntToken.tag)     `==▷` { SInt((it as IntToken).value) })
+        SX `ːː=` (TokenParser(StringToken.tag)  `==▷` { SText((it as StringToken).value) })
+        SX `ːː=` (TokenParser(BooleanToken.tag) `==▷` { SBoolean((it as BooleanToken).value) })
+
+        SXList `ːː=` (SX.`*`)
         // @formatter:on
     }
 }
 
 abstract class SExp {
+    @Suppress("UNCHECKED_CAST")
     companion object {
         var shouldNamesBeSymbols = true
 
-        fun apply(list: List<SExp?>): SExp {
-            val hd = list.firstOrNull()
-            val tl = list.minus(hd)
-            return if (hd !== null) SConcat(hd, apply(tl))
+        infix fun apply(list: List<SExp?>): SExp {
+            val (h, t) = list unApply 2
+            return if (h is Some<*> && t is Some<*>) SConcat(h() as SExp, apply(t() as List<SExp?>))
             else SNil()
         }
 
         fun apply(list: List<SExp?>, tombstone: SExp): SExp {
-            val hd = list.firstOrNull()
-            val tl = list.minus(hd)
-            return if (hd !== null) SConcat(hd, apply(tl, tombstone))
-            else tombstone
+            val (h, t) = list unApply 2
+            return if (h is Some<*> && t is Some<*>)
+                SConcat(h() as SExp, apply(t() as List<SExp?>, tombstone))
+            else
+                tombstone
         }
 
         private var maxSerialNumber = 0L
@@ -94,6 +101,7 @@ data class SInt(val value: Int) : SExp() {
     override val isInteger: Boolean = true
 }
 
+@Suppress("unused")
 data class SChar(val value: Char) : SExp() {
     override fun toString(): String = "$value"
     override fun toDottedList(): Pair<List<Nothing>, SChar> = emptyList<Nothing>() to this
@@ -112,6 +120,7 @@ data class SBoolean(val value: Boolean) : SExp() {
     override val isBoolean: Boolean = true
 }
 
+@Suppress("unused")
 data class SKeyword(val value: String) : SExp(), Comparable<SKeyword> {
     override fun toString(): String = "#:$value"
     override fun toDottedList(): Pair<List<Nothing>, SKeyword> = emptyList<Nothing>() to this
@@ -126,11 +135,12 @@ data class SName(val value: String, val version: Int) : SSymbol(value), Comparab
         fun from(string: String): SName = nameTable(string)
     }
 
-    override fun toString(): String = when {
-        version == 0 -> string
-        else ->
+    override fun toString(): String = when (version) {
+        0 -> string
+        else -> {
             if (SExp.shouldNamesBeSymbols) "$value/$$version"
             else "#name[$string $version]"
+        }
     }
 
     override fun toDottedList(): Pair<List<Nothing>, SName> = emptyList<Nothing>() to this
@@ -171,13 +181,48 @@ data class SConcat(var car: SExp, var cdr: SExp) : SExp() {
     override val isList: Boolean = cdr.isList
 }
 
-fun main(args: Array<String>) {
-    val chars = LiveStream("(define   (inc   x)   (+\n\n x ;a sntaoheusah\n #! #! aoeuaoeu !# !# 1)) (inc 3)")
-    println("chars: $chars");
+fun test1() {
+    val chars = LiveStream("(define   (inc   x)   (+\n\n x a sntaoheusah\n #! #! aoeuaoeu !# !# 1)) (inc 3)")
+    println("chars: $chars")
     val lexer = SXLexer()
     lexer.lex(chars)
-    println("tokens: " + lexer.output);
+    println("tokens: " + lexer.output)
     println("parse:")
     val ast = SXParser.SX.parse(lexer.output)
     println(ast)
+}
+
+fun test2() {
+    val S = SXParser.SX.compile
+    val core = listOf(
+            PunctToken("("),
+//            PunctToken("("),
+//            PunctToken(")"),
+            PunctToken(")")
+    )
+
+    var input = core
+/*    var rounds = 1
+    while (rounds > 0) {
+        input += input
+        rounds -= 1
+    }
+
+    input = PunctToken("(") cons (input + listOf(PunctToken(")")))*/
+    println("input: $input")
+    println("input.length = ${input.size}")
+
+    val source: LiveStreamSource<Token> = LiveStreamSource()
+    source += input
+    val stream = LiveStream(source)
+    val pm = ParsingMachine(S, stream)
+
+    println("parse string generated!")
+    println(pm.output.head)
+    println(pm.output.head.reduce())
+    println(pm.output)
+}
+
+fun main(args: Array<String>) {
+    test2()
 }

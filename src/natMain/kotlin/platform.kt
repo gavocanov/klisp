@@ -57,7 +57,12 @@ actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap
     override fun invoke(p1: I): O = fn(p1)
 }
 
-actual class SortedSet<T : Comparable<T>> : Set<T> {
+actual class FirstSet<T : Comparable<T>> : SortedSet<T>, Set<T> {
+    actual constructor(): super()
+    actual constructor(from: T): super(setOf(from).sorted())
+}
+
+actual open class SortedSet<T : Comparable<T>> : Set<T> {
     private val lst: List<T>
 
     actual constructor(from: T) {
@@ -100,3 +105,30 @@ actual class Queue<T> actual constructor() : IQueue<T> {
     override fun toString(): String = q.toString()
 }
 
+actual class FP actual constructor(): IFP {
+    private var stabilized = false
+    private var running = false
+    private var changed = false
+    private var generation = 0
+    private var master: Any? = null
+
+    override fun stabilized() : Boolean = stabilized
+    override fun running(): Boolean = running
+    override fun changed(): Boolean = changed
+    override fun generation(): Int = generation
+    override fun master(): Any? = master
+
+    override fun stabilized(v: Boolean) {stabilized = v}
+    override fun running(v: Boolean) {running = v}
+    override fun changed(v: Boolean) {changed = v}
+    override fun incGeneration() {generation += 1}
+    override fun master(v: Any?) {master = v}
+
+    override fun reset() {
+        stabilized = false
+        running = false
+        changed = false
+        generation = 0
+        master = null
+    }
+}
