@@ -24,6 +24,9 @@ val <T> List<T>.reversed: List<T> get() = this.asReversed()
 
 infix fun <T> Set<T>.subsetOf(other: Set<T>) = other.containsAll(this)
 
+inline val <T> T?.exIfNull: T
+    get() = this ?: throw NullPointerException()
+
 inline val <T> List<T>.first: T
     get() =
         if (isEmpty()) throw NoSuchElementException()
@@ -44,18 +47,17 @@ inline val <T> List<T>.rest: List<T>
 inline val <T> List<T>.head: T get() = first
 inline val <T> List<T>.tail: List<T> get() = rest
 
-infix fun <T> List<T>.unApply(n: Int): List<Any> {
+inline infix fun <reified T> List<T>.unApply(n: Int): List<Any?> {
     require(n > 1) { "number must be bigger then 1" }
-//    require(n <= size) { "number ($n) can't be bigger then the list size ($size)" }
     val hd = when {
-        n <= size -> subList(0, n - 1).map { (it as Any?).toOptional() }
-        n == size -> map { (it as Any?).toOptional() }
-        else -> (0 until n - 1).map { this.getOrNull(it)?.toOptional() ?: None }
+        n <= size -> subList(0, n - 1)
+        n == size -> this
+        else -> (0 until n - 1).map { this.getOrNull(it) }
     }
 
     val tl =
             if (n <= size)
-                subList(n - 1, size).map { (it as Any?).toOptional() }
+                subList(n - 1, size)
             else
                 emptyList()
 
@@ -74,7 +76,13 @@ inline val String.rest: String
     }
 
 fun <T> T.toListOf(): List<T> = listOf(this)
-infix fun <T> T.cons(list: Iterable<T>): List<T> = listOf(this) + list
+
+@Suppress("UNCHECKED_CAST")
+infix fun <T> T.cons(list: Iterable<T>): List<T> =
+        if (this is List<*>) (this as List<T>) + list
+        else listOf(this) + list
+
+infix fun <T> T.cons(e: T): List<T> = listOf(this, e)
 
 /**
  * split by space not contained in "", '', [] and {}
@@ -164,7 +172,7 @@ data class Some<out T>(private val value: T) : Option<T>() {
     override val isEmpty: Boolean = value === null
     override fun toString() = "Some($value)"
     override fun toNullable(): T? = value
-    operator fun invoke(): T = value ?: throw NullPointerException()
+    operator fun invoke(): T = value.exIfNull
     fun get(): T = invoke()
 }
 

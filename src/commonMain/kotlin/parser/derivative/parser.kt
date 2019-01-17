@@ -9,6 +9,7 @@ import klisp.Option
 import klisp.Some
 import klisp.SortedSet
 import klisp.cons
+import klisp.exIfNull
 import klisp.head
 import klisp.reversed
 import klisp.subsetOf
@@ -725,70 +726,86 @@ data class ParsingState<T : Token>(val lang: Pattern,
      * Takes a step toward converting a parse string into a parse tree.
      */
     @Suppress("UNCHECKED_CAST")
-    private fun reduceStep(stack: List<Any>, parseString: List<Token>): Pair<List<Any>, List<Token>> {
-        val combine: (Any, List<Any>, List<Token>) -> Pair<List<Any>, List<Token>> =
-                { newTop: Any, _stack: List<Any>, rest: List<Token> ->
-                    val hd = _stack.head
-                    val tl = _stack.tail
-                    when {
-                        hd is CloseRed || hd is CloseRep || hd is CloseOpt -> listOf(newTop, hd) cons tl to rest
-                        stack.isEmpty() -> newTop.toListOf() to rest
-                        else -> ParSeq(newTop, hd) cons tl to rest
-                    }
-                }
-
-        fun reassociate(data: Any): Any {
-            val (a, _b) = when (data) {
-                is ParSeq<*, *> -> data.first to data.second
-                else -> null to null
-            }
-            val (b, rest) = when (_b) {
-                is ParSeq<*, *> -> _b.first to _b.second
-                else -> null to null
-            }
+    private fun reduceStep(stack: List<Any?>, parseString: List<Token>): Pair<List<Any?>, List<Token>> {
+        fun combine(newTop: Any?, _stack: List<Any?>, rest: List<Token>): Pair<List<Any?>, List<Token>> {
+            val (hd, _tl) = _stack unApply 2
+            val tl = _tl as List<Any?>
             return when {
-                a !== null && b !== null -> reassociate(ParSeq(ParSeq(a, b), rest))
-                data is ParSeq<*, *> -> data
-                else -> data
+                hd is CloseRed || hd is CloseRep || hd is CloseOpt ->
+                    ((newTop cons hd) cons tl) to rest
+                _stack.isEmpty() ->
+                    newTop.toListOf() to rest
+                else ->
+                    (Seq(newTop, hd) cons tl) to rest
             }
         }
 
-        val (_s1, _s2, _st) = stack unApply 3
+        fun reassociate(data: Any?): Any {
+            if (data is Seq<*, *> && data.second is Seq<*, *>) {
+                val a = data.first
+                val _b = data.second as Seq<Any?, Any?>
+                val b = _b.first
+                val rest = _b.second
+                return reassociate(Seq(Seq(a, b), rest))
+            }
+            return data.exIfNull
+        }
+
+        val (sh, s2, _s3t) = stack unApply 3
+        val (_, _s2t) = stack unApply 2
+        val st2 = _s2t as List<Any?>
+        val st3 = _s3t as List<Any?>
+
         val (_ph, _pt) = parseString unApply 2
+        val ph = _ph.exIfNull as Token
+        val pt = _pt as List<Token>
 
-        val s1 = if (_s1 is Some<*>) _s1() ?: throw NullPointerException() else None
-        val s2 = if (_s2 is Some<*>) _s2() ?: throw NullPointerException() else None
-        val st = if (_st is Some<*>) _st() as List<Any> else emptyList()
-
-        val ph = if (_ph is Some<*>) _ph() ?: throw NullPointerException() else None
-        val pt = if (_pt is Some<*>) _pt() as List<Token> else emptyList()
-
-        return when {
-            ph is CloseRed || ph is CloseRep || ph is CloseOpt -> ph cons stack to pt
-            ph is HardEps -> combine(Unit, stack, pt)
+        val r = when {
+            ph is CloseRed ->
+                ph cons stack to pt
+            ph is CloseRep ->
+                ph cons stack to pt
+            ph is CloseOpt ->
+                ph cons stack to pt
+            ph is HardEps ->
+                combine(Unit, stack, pt)
             s2 is CloseRed && ph is OpenRed && (s2.id == ph.id) -> {
-                val r = reassociate(s1)
-                combine(s2.f(r), st, pt)
+                val rData = reassociate(sh)
+                combine(s2.f(rData), st3, pt)
             }
-            s1 is CloseRep && ph is OpenRep -> combine(emptyList<Any>(), pt, st as List<Token>)
-            s2 is CloseRep && ph is OpenRep -> combine(s1.toListOf(), st, pt)
-            s1 is CloseOpt && ph is OpenOpt -> combine(None, st, pt)
-            s2 is CloseOpt && ph is OpenOpt -> combine(Some(s1), st, pt)
-            s1 is CloseRed || s1 is CloseRep || s1 is CloseOpt -> combine(ph, s1 cons st, pt)
-            stack.isNotEmpty() && parseString.isEmpty() -> throw IllegalStateException("bug, over-parsed")
-            else -> combine(ParSeq(ph, s1), st, pt)
+            sh is CloseRep && ph is OpenRep ->
+                combine(emptyList<Any?>(), st2, pt)
+            s2 is CloseRep && ph is OpenRep ->
+                combine(listify(sh.exIfNull), st3, pt)
+            sh is CloseOpt && ph is OpenOpt ->
+                combine(None, st2, pt)
+            s2 is CloseOpt && ph is OpenOpt ->
+                combine(Some(sh), st3, pt)
+            sh is CloseRed || sh is CloseRep || sh is CloseOpt ->
+                combine(ph, sh cons st2, pt)
+            stack.isNotEmpty() && parseString.isEmpty() ->
+                throw IllegalStateException("bug, over-parsed")
+            else ->
+                combine(Seq(ph, sh), st2, pt)
         }
+
+        return r
+    }
+
+    private fun listify(o: Any): List<Any> = when (o) {
+        is Seq<*, *> -> o.first.exIfNull cons listify(o.second.exIfNull)
+        else -> emptyList()
     }
 
     /**
      * Converts a parse string into a parse tree.
      */
     fun reduce(): Any {
-        var state: Pair<List<Any>, List<Token>> = emptyList<Any>() to parse
+        var state: Pair<List<Any?>, List<Token>> = emptyList<Any?>() to parse
         while (state.second.isNotEmpty()) {
             state = reduceStep(state.first, state.second)
         }
-        return state.first.head
+        return state.first.head.exIfNull
     }
 }
 
@@ -874,7 +891,9 @@ class ParsingMachine<T : Token>(private val lang: Pattern, private val input: Li
 /**
  * Contains a sequence of two parsed items.
  */
-data class ParSeq<A, B>(val first: A, val second: B)
+data class Seq<A, B>(val first: A, val second: B) {
+    override fun toString(): String = "~($first, $second)"
+}
 
 /**
  * An abstract parser that creates parse trees of type <code>A</code>.
@@ -883,7 +902,7 @@ abstract class Parser<A> {
     /**
      * @return a new parser which parses the concatenation of this parser and the supplied parser.
      */
-    infix fun <B> `~`(pat2: Parser<B>): Parser<ParSeq<A, B>> = ConParser(this, pat2)
+    infix fun <B> `~`(pat2: Parser<B>): Parser<Seq<A, B>> = ConParser(this, pat2)
 
     /**
      * @return a new parser which parses as this parser or the supplied parser.
@@ -980,15 +999,15 @@ open class GenericParser<A> : Parser<A>() {
     override val compile: GenericPattern
         get() {
             if (compileCache !== null)
-                return compileCache ?: throw NullPointerException()
+                return compileCache.exIfNull
 
             compileCache = GenericPattern()
             rules.forEach { pat ->
-                val cc = compileCache ?: throw NullPointerException()
+                val cc = compileCache.exIfNull
                 cc `ːː=` pat.compile
             }
 
-            return compileCache ?: throw NullPointerException()
+            return compileCache.exIfNull
         }
 }
 
@@ -1020,7 +1039,7 @@ object EmptyParser : Parser<Nothing>() {
  * A parser representing the concatenation of two parsers.
  */
 data class ConParser<A, B>(private val pat1: Parser<A>,
-                           private val pat2: Parser<B>) : Parser<ParSeq<A, B>>() {
+                           private val pat2: Parser<B>) : Parser<Seq<A, B>>() {
     override val compile: Pattern
             by lazy { ConPattern(pat1.compile, pat2.compile) }
 }

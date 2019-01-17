@@ -3,6 +3,7 @@
 package klisp.parser.derivative
 
 import klisp.cons
+import klisp.exIfNull
 import klisp.first
 import klisp.last
 import klisp.rest
@@ -307,7 +308,7 @@ abstract class NonBlockingLexer<C : Char, A> {
         } else if (currentState.isReject) {
             // Backtrack to the last accepting state; fail if none.
             currentState = lastAcceptingState.fire()
-            currentInput = lastAcceptingInput ?: throw NullPointerException()
+            currentInput = lastAcceptingInput.exIfNull
             lastAcceptingState = RejectLexerState
             lastAcceptingInput = null
             return true
@@ -322,7 +323,7 @@ abstract class NonBlockingLexer<C : Char, A> {
                 false
             } else {
                 currentState = lastAcceptingState.fire()
-                currentInput = lastAcceptingInput ?: throw NullPointerException()
+                currentInput = lastAcceptingInput.exIfNull
                 lastAcceptingState = RejectLexerState
                 lastAcceptingInput = null
                 true

@@ -196,19 +196,19 @@ fun test2() {
     val S = SXParser.SX.compile
     val core = listOf(
             PunctToken("("),
-//            PunctToken("("),
-//            PunctToken(")"),
+            PunctToken("("),
+            PunctToken(")"),
             PunctToken(")")
     )
 
     var input = core
-/*    var rounds = 1
+    var rounds = 1
     while (rounds > 0) {
         input += input
         rounds -= 1
     }
 
-    input = PunctToken("(") cons (input + listOf(PunctToken(")")))*/
+    input = PunctToken("(") cons (input + listOf(PunctToken(")")))
     println("input: $input")
     println("input.length = ${input.size}")
 
