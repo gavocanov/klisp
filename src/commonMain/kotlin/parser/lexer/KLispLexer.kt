@@ -1,32 +1,29 @@
-package klisp.parser.derivative.klisp
+/**
+ * Author: Paolo Gavocanov, based on the Scheme lexer by Matthew Might
+ */
 
-import klisp.Platform
-import klisp.parser.derivative.AnyChar
-import klisp.parser.derivative.BooleanToken
-import klisp.parser.derivative.CloseBraceToken
-import klisp.parser.derivative.END
-import klisp.parser.derivative.IntToken
-import klisp.parser.derivative.LiveStream
-import klisp.parser.derivative.NonBlockingLexer
-import klisp.parser.derivative.OpenBraceToken
-import klisp.parser.derivative.PunctToken
-import klisp.parser.derivative.RegularLanguage
-import klisp.parser.derivative.RegularLanguage.Companion.notOneOf
-import klisp.parser.derivative.RegularLanguage.Companion.oneOf
-import klisp.parser.derivative.StringToken
-import klisp.parser.derivative.SymbolToken
-import klisp.parser.derivative.Token
+package klisp.parser.lexer
+
+import klisp.expected.Platform
+import klisp.parser.lexer.lang.AnyChar
+import klisp.parser.lexer.lang.END
+import klisp.parser.lexer.lang.RegularLanguage.Companion.notOneOf
+import klisp.parser.lexer.lang.RegularLanguage.Companion.oneOf
+import klisp.parser.lexer.tokens.BooleanToken
+import klisp.parser.lexer.tokens.CloseBraceToken
+import klisp.parser.lexer.tokens.IntToken
+import klisp.parser.lexer.tokens.OpenBraceToken
+import klisp.parser.lexer.tokens.StringToken
+import klisp.parser.lexer.tokens.SymbolToken
 import klisp.reversed
 import klisp.singletonList
 import klisp.took
-
-private typealias RL = RegularLanguage
-private typealias NBL = NonBlockingLexer<Char, Token>
+import kotlin.jvm.JvmStatic
 
 /**
- * KLLexer: A lexer for the programming language KLisp
+ * KLispLexer: A lexer for the programming language KLisp
  */
-class KLLexer : NBL() {
+class KLispLexer : NBL() {
     // @formatter:off
 
     // Abbreviations:
@@ -63,16 +60,21 @@ class KLLexer : NBL() {
         STRING.update(AnyChar)        { ss , cs  -> STRING apply cs.reversed + ss }
     }
     // @formatter:on
+
+    companion object {
+        // quick tests...
+        @JvmStatic
+        fun main(args: Array<String>) {
+            val input = "(+ 1  true \"aaa bbb\" if then else)"
+            val stream = LiveStream(input)
+            val lexer = KLispLexer()
+            val start = Platform.getTimeNanos()
+            lexer.lex(stream)
+            val took = took(start)
+            println(lexer.output)
+            println(lexer.output.toList)
+            println(took)
+        }
+    }
 }
 
-fun main(args: Array<String>) {
-    val input = "(+ 1  true \"aaa bbb\" if then else)"
-    val stream = LiveStream(input)
-    val lexer = KLLexer()
-    val start = Platform.getTimeNanos()
-    lexer.lex(stream)
-    val took = took(start)
-    println(lexer.output)
-    println(lexer.output.toList)
-    println(took)
-}

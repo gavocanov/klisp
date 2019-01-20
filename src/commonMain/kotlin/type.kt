@@ -2,7 +2,8 @@
 
 package klisp
 
-import klisp.parser.parseAtom
+import klisp.parser.parseStringAtom
+import klisp.expected.Platform
 import kotlinx.serialization.json.JSON
 import kotlinx.serialization.serializer
 
@@ -142,7 +143,7 @@ sealed class decimal<T : Number>(private val decimalValue: T) : number<T>(decima
 @ExperimentalUnsignedTypes
 sealed class collection(protected open val value: Collection<exp>) : atom, serializable, Collection<exp> by value {
     override fun toJson(): String = "[${value.joinToString(",", transform = exp::toJson)}]"
-    override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseAtom(it) } as atom
+    override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseStringAtom(it) } as atom
     override var meta: exp? = null
     override fun toString(): String = ":collection $value"
 }

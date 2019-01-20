@@ -1,5 +1,7 @@
-package klisp
+package klisp.expected
 
+import klisp.HISTORY_FILE_NAME
+import klisp.LOGGER
 import kotlinx.cinterop.toKString
 import linenoise.linenoise
 import linenoise.linenoiseHistoryAdd
@@ -102,24 +104,38 @@ actual class Queue<T> actual constructor() : IQueue<T> {
 }
 
 @ThreadLocal
-actual class FixedPoint actual constructor(): IFixedPoint {
+actual class FixedPoint actual constructor() : IFixedPoint {
     private var stabilized = false
     private var running = false
     private var changed = false
     private var generation = 0
     private var master: Any? = null
 
-    override fun stabilized() : Boolean = stabilized
+    override fun stabilized(): Boolean = stabilized
     override fun running(): Boolean = running
     override fun changed(): Boolean = changed
     override fun generation(): Int = generation
     override fun master(): Any? = master
 
-    override fun stabilized(v: Boolean) {stabilized = v}
-    override fun running(v: Boolean) {running = v}
-    override fun changed(v: Boolean) {changed = v}
-    override fun incGeneration() {generation += 1}
-    override fun master(v: Any?) {master = v}
+    override fun stabilized(v: Boolean) {
+        stabilized = v
+    }
+
+    override fun running(v: Boolean) {
+        running = v
+    }
+
+    override fun changed(v: Boolean) {
+        changed = v
+    }
+
+    override fun incGeneration() {
+        generation += 1
+    }
+
+    override fun master(v: Any?) {
+        master = v
+    }
 
     override fun reset() {
         stabilized = false

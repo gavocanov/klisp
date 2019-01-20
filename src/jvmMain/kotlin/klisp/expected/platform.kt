@@ -1,5 +1,8 @@
-package klisp
+package klisp.expected
 
+import klisp.ExitException
+import klisp.HISTORY_FILE_NAME
+import klisp.LOGGER
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
@@ -16,27 +19,6 @@ val HISTORY = DefaultHistory()
 val READER: LineReader = LineReaderBuilder.builder()
         .variable(LineReader.HISTORY_FILE, Platform.getHistoryFileName())
         .history(HISTORY)
-/*        .highlighter { _, buffer ->
-            val l = tokenize(buffer)
-            l.fold(AttributedStringBuilder()) { builder, t ->
-                val s = stdEnv[symbol(t)]
-                if (s !== null)
-                    builder
-                            .append("$t ", BLUE)
-                else {
-                    when {
-                        t.startsWith(':') -> builder.append("$t ", BLUE)
-                        t == "(" -> builder.append(t, WHITE)
-                        t == ")" -> builder.append(t, WHITE)
-                        t == "{" -> builder.append(t, WHITE)
-                        t == "}" -> builder.append(t, WHITE)
-                        t == "[" -> builder.append(t, WHITE)
-                        t == "]" -> builder.append(t, WHITE)
-                        else -> builder.append("$t ", AttributedStyle.DEFAULT)
-                    }
-                }
-            }.toAttributedString()
-        }*/
         .build()
 
 private val WHITE: AttributedStyle = AttributedStyle().foreground(AttributedStyle.WHITE)

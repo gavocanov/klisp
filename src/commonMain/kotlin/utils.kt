@@ -2,6 +2,7 @@
 
 package klisp
 
+import klisp.expected.Platform
 import klisp.tty.TermColors
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.JvmSynthetic

@@ -1,11 +1,19 @@
-@file:Suppress("unused", "FINAL_UPPER_BOUND")
+/**
+ * Author: Matthew Might, translated to Kotlin by Paolo Gavocanov
+ * Site:   http://matt.might.net/
+ */
 
-package klisp.parser.derivative
+package klisp.parser.lexer
 
 import klisp.cons
 import klisp.exIfNull
 import klisp.first
 import klisp.last
+import klisp.parser.lexer.lang.Catenation
+import klisp.parser.lexer.lang.CharSet
+import klisp.parser.lexer.lang.Character
+import klisp.parser.lexer.lang.RegularLanguage
+import klisp.parser.lexer.lang.ε
 import klisp.rest
 import klisp.reversed
 
@@ -14,7 +22,7 @@ import klisp.reversed
  * which can be converted into characters) and emits a stream of type-A
  * tokens.
  */
-abstract class NonBlockingLexer<C : Char, A> {
+abstract class NonBlockingLexer<A> {
     private lateinit var outputSource: LiveStreamSource<A>
     private lateinit var _output: LiveStream<A>
 
@@ -28,14 +36,14 @@ abstract class NonBlockingLexer<C : Char, A> {
      * to fire once matched.
      */
     protected inner class LexerRule(private val regex: RegularLanguage,
-                                    private val action: (List<C>) -> LexerState) {
+                                    private val action: (List<Char>) -> LexerState) {
 
         val mustAccept get() = regex.isEmptyString
         val accepts get() = regex.acceptsEmptyString
         val rejects get() = regex.rejectsAll
         fun deriveEND() = LexerRule(regex.deriveEND(), action)
         infix fun derive(c: Char) = LexerRule(regex derive c, action)
-        infix fun fire(chars: List<C>) = action(chars)
+        infix fun fire(chars: List<Char>) = action(chars)
         override fun toString(): String = regex.toString()
     }
 
@@ -51,7 +59,7 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Characters lexed so far in this state.
          */
-        protected abstract val chars: List<C>
+        protected abstract val chars: List<Char>
 
         /**
          * True if this state could accept.
@@ -102,7 +110,7 @@ abstract class NonBlockingLexer<C : Char, A> {
          * Checks to see if any of the rules match the input c.
          * @return the lexer state after such a match.
          */
-        infix fun next(c: C): LexerState = MinorLexerState(
+        infix fun next(c: Char): LexerState = MinorLexerState(
                 chars = c cons chars,
                 rules = rules
                         .map { it derive c }
@@ -112,50 +120,50 @@ abstract class NonBlockingLexer<C : Char, A> {
     /**
      * A state that rejects everything.
      */
-    private val RejectLexerState: NonBlockingLexer<C, A>.LexerState =
-            object : NonBlockingLexer<C, A>.LexerState() {
-                override fun fire(): NonBlockingLexer<C, A>.LexerState =
+    private val RejectLexerState: LexerState =
+            object : LexerState() {
+                override fun fire(): NonBlockingLexer<A>.LexerState =
                         throw IllegalStateException("lexing failed right before: $currentInput")
 
-                override val rules: List<NonBlockingLexer<C, A>.LexerRule> = emptyList()
-                override val chars: List<C> = emptyList()
+                override val rules: List<NonBlockingLexer<A>.LexerRule> = emptyList()
+                override val chars: List<Char> = emptyList()
             }
 
     /**
     A minor lexer state is an intermediate lexing state.
      */
-    protected inner class MinorLexerState(override val chars: List<C>,
+    protected inner class MinorLexerState(override val chars: List<Char>,
                                           override val rules: List<LexerRule>) : LexerState()
 
-    interface Matchable<C : Char> {
+    interface Matchable {
         infix fun apply(action: () -> Unit)
-        infix fun over(action: (List<C>) -> Unit)
+        infix fun over(action: (List<Char>) -> Unit)
     }
 
     /**
      * Represents a half-defined match-and-switch rule, which needs the
      * action to be completed.
      */
-    protected interface Switchable<C : Char, A> {
+    protected interface Switchable<A> {
         /**
          * Switches to a state, ignoring the input.
          */
-        infix fun to(action: () -> NonBlockingLexer<C, A>.LexerState)
+        infix fun to(action: () -> NonBlockingLexer<A>.LexerState)
 
         /**
          * Switches to a state, consuming the input.
          */
-        infix fun over(action: (List<C>) -> NonBlockingLexer<C, A>.LexerState)
+        infix fun over(action: (List<Char>) -> NonBlockingLexer<A>.LexerState)
     }
 
     /**
      * A major lexing state is defined by the programmer.
      */
-    protected open inner class MajorLexerState : NonBlockingLexer<C, A>.LexerState() {
+    protected open inner class MajorLexerState : LexerState() {
         /**
          * Major states begin with an empty character list.
          */
-        override val chars = emptyList<C>()
+        override val chars = emptyList<Char>()
 
         private var _rules: List<LexerRule> = emptyList()
 
@@ -174,7 +182,7 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Adds a rule to this state which matches regex and fires action.
          */
-        infix fun apply(regex: RegularLanguage): Matchable<C> = object : Matchable<C> {
+        infix fun apply(regex: RegularLanguage): Matchable = object : Matchable {
             override infix fun apply(action: () -> Unit) {
                 _rules = LexerRule(regex) {
                     action()
@@ -182,7 +190,7 @@ abstract class NonBlockingLexer<C : Char, A> {
                 } cons _rules
             }
 
-            override infix fun over(action: (List<C>) -> Unit) {
+            override infix fun over(action: (List<Char>) -> Unit) {
                 _rules = LexerRule(regex) { chars ->
                     action(chars)
                     this@MajorLexerState
@@ -193,18 +201,18 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Utility to reduce boilerplate
          */
-        infix fun apply(s: String): Matchable<C> = apply(s.toRL)
+        infix fun apply(s: String): Matchable = apply(s.toRL)
 
         /**
          * Adds a rule to this state which matches regex, fires action and
          * switches to the lexer state returned by the action.
          */
-        infix fun switchesOn(regex: RegularLanguage): Switchable<C, A> = object : Switchable<C, A> {
-            override infix fun over(action: (List<C>) -> NonBlockingLexer<C, A>.LexerState) {
+        infix fun switchesOn(regex: RegularLanguage): Switchable<A> = object : Switchable<A> {
+            override infix fun over(action: (List<Char>) -> NonBlockingLexer<A>.LexerState) {
                 _rules = LexerRule(regex, action) cons _rules
             }
 
-            override infix fun to(action: () -> NonBlockingLexer<C, A>.LexerState) {
+            override infix fun to(action: () -> NonBlockingLexer<A>.LexerState) {
                 _rules = LexerRule(regex) { action() } cons _rules
             }
         }
@@ -212,7 +220,7 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Utility to reduce boilerplate
          */
-        infix fun switchesOn(s: String): Switchable<C, A> = switchesOn(s.toRL)
+        infix fun switchesOn(s: String): Switchable<A> = switchesOn(s.toRL)
     }
 
     /**
@@ -231,15 +239,15 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Adds a rule whose action also sees the current state.
          */
-        fun update(regex: RegularLanguage, stateAction: (S, List<C>) -> LexerState) {
-            val action = { chars: List<C> -> stateAction(this.state, chars) }
+        fun update(regex: RegularLanguage, stateAction: (S, List<Char>) -> LexerState) {
+            val action = { chars: List<Char> -> stateAction(this.state, chars) }
             super.switchesOn(regex) over action
         }
 
         /**
          * Utility to reduce boilerplate
          */
-        fun update(s: String, stateAction: (S, List<C>) -> LexerState) =
+        fun update(s: String, stateAction: (S, List<Char>) -> LexerState) =
                 update(s.toRL, stateAction)
     }
 
@@ -251,7 +259,7 @@ abstract class NonBlockingLexer<C : Char, A> {
     /**
      * During lexing, the input associated with the last accepting state.
      */
-    private var lastAcceptingInput: LiveStream<C>? = null
+    private var lastAcceptingInput: LiveStream<Char>? = null
 
     /**
      * During lexing, the current lexer state.
@@ -261,13 +269,13 @@ abstract class NonBlockingLexer<C : Char, A> {
     /**
      * During lexing, the location in the current input.
      */
-    private lateinit var currentInput: LiveStream<C>
+    private lateinit var currentInput: LiveStream<Char>
 
-    private val LiveStream<C>?.isNullOrEmpty: Boolean
+    private val LiveStream<Char>?.isNullOrEmpty: Boolean
         get() = if (this === null) true
         else this.isEmpty
 
-    private val LiveStream<C>?.isPlugged: Boolean
+    private val LiveStream<Char>?.isPlugged: Boolean
         get() = if (this === null) false
         else this.isPlugged
 
@@ -275,7 +283,7 @@ abstract class NonBlockingLexer<C : Char, A> {
      * Starts the lexer on the given input stream.
      * The field output will contain a live stream of the lexer output.
      */
-    infix fun lex(input: LiveStream<C>) {
+    infix fun lex(input: LiveStream<Char>) {
         currentState = MAIN
         currentInput = input
         outputSource = LiveStreamSource()

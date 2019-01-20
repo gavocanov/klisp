@@ -9,16 +9,16 @@ import klisp.head
 import klisp.keyword
 import klisp.nil
 import klisp.nok
-import klisp.parser.derivative.BooleanToken
-import klisp.parser.derivative.CharToken
-import klisp.parser.derivative.CloseBraceToken
-import klisp.parser.derivative.KeywordToken
-import klisp.parser.derivative.LiveStream
-import klisp.parser.derivative.OpenBraceToken
-import klisp.parser.derivative.StringToken
-import klisp.parser.derivative.SymbolToken
-import klisp.parser.derivative.Token
-import klisp.parser.derivative.klisp.KLLexer
+import klisp.parser.lexer.KLispLexer
+import klisp.parser.lexer.LiveStream
+import klisp.parser.lexer.tokens.BooleanToken
+import klisp.parser.lexer.tokens.CharToken
+import klisp.parser.lexer.tokens.CloseBraceToken
+import klisp.parser.lexer.tokens.KeywordToken
+import klisp.parser.lexer.tokens.OpenBraceToken
+import klisp.parser.lexer.tokens.StringToken
+import klisp.parser.lexer.tokens.SymbolToken
+import klisp.parser.lexer.tokens.Token
 import klisp.string
 import klisp.symbol
 import klisp.type
@@ -30,7 +30,7 @@ fun derivativeParse(s: String): exp {
     if (balance.nok)
         throw IllegalArgumentException("unbalanced brackets <left: ${balance.left}, right: ${balance.right}>")
     val stream = LiveStream(s)
-    val lexer = KLLexer()
+    val lexer = KLispLexer()
     lexer.lex(stream)
     return readFromTokens(lexer.output.toList.toMutableList())
 }
@@ -77,6 +77,28 @@ fun parseTokenAtom(t: Token): atom = when (t) {
         }
 
         if (value === nil || value === null) symbol(t.toString())
+        else value
+    }
+}
+
+@ExperimentalUnsignedTypes
+fun parseStringAtom(s: String): atom = when {
+    s.startsWith(':') -> keyword(s)
+    s.startsWith('"') && s.endsWith('"') -> string(s)
+    s.startsWith('\'') && s.endsWith('\'') && s.length == 3 -> char(s[1])
+    else -> {
+        val constructors = type
+                .values()
+                .filter(type::isNumber)
+                .mapNotNull(type::constructor)
+
+        var value: atom? = null
+        for (f in constructors) {
+            value = f(s) as atom
+            if (value !== nil) break
+        }
+
+        if (value === nil || value === null) symbol(s)
         else value
     }
 }

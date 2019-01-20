@@ -1,6 +1,7 @@
 package klisp
 
 import klisp.parser.derivativeParse
+import klisp.expected.Platform
 
 var PROFILE = false
 var DEBUG = false
