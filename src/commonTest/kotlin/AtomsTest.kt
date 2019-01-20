@@ -77,7 +77,7 @@ class AtomsTest {
     fun string() = assertEquals(string("\"111 aaa\""), _eval("\"111 aaa\""), "string")
 
     @Test
-    fun char() = assertEquals(char('1'), _eval("'1'"), "char")
+    fun char() = assertEquals(char('1'), _eval("\\1"), "char")
 
     @Test
     fun set() = assertEquals(set(listOf(byte(1), byte(1), byte(2))), _eval("(set 1 2)"), "set")
@@ -101,7 +101,7 @@ class AtomsTest {
                     :float 1.0
                     :double -1e103
                     :string "11 aa"
-                    :char '1'
+                    :char \1
                     :list (list 1 1.0 (map :a 1) :key)
                     :set (set 1 1 1 1 2 2 2 2)
                     :map (map :a (list 1 2 3 true))

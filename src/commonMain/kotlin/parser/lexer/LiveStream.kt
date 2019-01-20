@@ -14,34 +14,6 @@ import klisp.Some
  * Every stream has a source which determines its tail.
  */
 open class LiveStream<A>(open val source: LiveStreamSource<A>) {
-    companion object {
-        operator fun invoke(s: String): LiveStream<Char> {
-            val src = LiveStreamSource<Char>()
-            src += s.toList()
-            src.terminate()
-            return LiveStream(src)
-        }
-
-        operator fun <T> invoke(it: Iterable<T>): LiveStream<T> {
-            val src = LiveStreamSource<T>()
-            src += it
-            src.terminate()
-            return LiveStream(src)
-        }
-    }
-
-    val toList by lazy {
-        var (h, t) = head to tail
-        val out = mutableListOf<A>()
-        while (!t.isPlugged) {
-            out.add(h)
-            h = t.head
-            t = t.tail
-        }
-        out.add(h)
-        out
-    }
-
     private var headCache: Option<A> = None
     private var tailCache: Option<LiveStream<A>> = None
 
@@ -86,9 +58,37 @@ open class LiveStream<A>(open val source: LiveStreamSource<A>) {
             }
         }
 
+    val toList by lazy {
+        var (h, t) = head to tail
+        val out = mutableListOf<A>()
+        while (!t.isPlugged) {
+            out.add(h)
+            h = t.head
+            t = t.tail
+        }
+        out.add(h)
+        out
+    }
+
+    companion object {
+        operator fun invoke(s: String): LiveStream<Char> {
+            val src = LiveStreamSource<Char>()
+            src += s.toList()
+            src.terminate()
+            return LiveStream(src)
+        }
+
+        operator fun <T> invoke(it: Iterable<T>): LiveStream<T> {
+            val src = LiveStreamSource<T>()
+            src += it
+            src.terminate()
+            return LiveStream(src)
+        }
+    }
+
     override fun toString(): String = when {
-        isEmpty -> "∅"
-        isPlugged -> "◌"
-        else -> "$head ː~ː $tail"
+        isEmpty -> "<empty>"
+        isPlugged -> "<end>"
+        else -> "$head | $tail"
     }
 }

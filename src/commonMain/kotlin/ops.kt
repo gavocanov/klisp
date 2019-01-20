@@ -208,6 +208,7 @@ fun set(it: exps): exp = when {
     else -> set(it.toSet())
 }
 
+@ExperimentalUnsignedTypes
 fun lex(args: exps): string {
     require(args.size == 1) { "lex should have 1 argument, got ${args.size}" }
     require(args[0] is string) { "argument should be a string" }

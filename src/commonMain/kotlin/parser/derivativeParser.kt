@@ -60,7 +60,7 @@ fun readFromTokens(tokens: MutableList<Token>): exp {
 @ExperimentalUnsignedTypes
 fun parseTokenAtom(t: Token): atom = when (t) {
     is KeywordToken -> keyword(t.value)
-    is StringToken -> string(t.value)
+    is StringToken -> string("\"${t.value}\"")
     is CharToken -> char(t.value)
     is SymbolToken -> symbol(t.value)
     is BooleanToken -> bool(t.value)
@@ -85,7 +85,7 @@ fun parseTokenAtom(t: Token): atom = when (t) {
 fun parseStringAtom(s: String): atom = when {
     s.startsWith(':') -> keyword(s)
     s.startsWith('"') && s.endsWith('"') -> string(s)
-    s.startsWith('\'') && s.endsWith('\'') && s.length == 3 -> char(s[1])
+    s.startsWith('\\') && s.length == 2 -> char(s[1])
     else -> {
         val constructors = type
                 .values()

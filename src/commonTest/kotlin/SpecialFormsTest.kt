@@ -64,7 +64,7 @@ class SpecialFormsTest {
         "(def a 1.0)" shouldEvalTo float(1.0f)
         "(def a true)" shouldEvalTo true
         "(def a false)" shouldEvalTo false
-        "(def a '1')" shouldEvalTo char('1')
+        "(def a \\1)" shouldEvalTo char('1')
         "(def a \"11 aa\")" shouldEvalTo string("\"11 aa\"")
         "(def a (lam (x) (+ x 1)))" shouldBeA func::class
         "(def a (list 1))" shouldBeA list::class

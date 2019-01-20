@@ -10,8 +10,11 @@ import klisp.parser.lexer.lang.END
 import klisp.parser.lexer.lang.RegularLanguage.Companion.notOneOf
 import klisp.parser.lexer.lang.RegularLanguage.Companion.oneOf
 import klisp.parser.lexer.tokens.BooleanToken
+import klisp.parser.lexer.tokens.CharToken
 import klisp.parser.lexer.tokens.CloseBraceToken
+import klisp.parser.lexer.tokens.DecToken
 import klisp.parser.lexer.tokens.IntToken
+import klisp.parser.lexer.tokens.KeywordToken
 import klisp.parser.lexer.tokens.OpenBraceToken
 import klisp.parser.lexer.tokens.StringToken
 import klisp.parser.lexer.tokens.SymbolToken
@@ -27,10 +30,17 @@ class KLispLexer : NBL() {
     // @formatter:off
 
     // Abbreviations:
-    private val id:  RL = (('A' thru 'Z') `||` ('a' thru 'z') `||` ('0' thru '9') `||` oneOf("-+/*_?%$#&^=!@<>:")).`+`
-    private val int: RL = "-".toRL.`?` `~` ('0' thru '9').`+`
-    private val ws:  RL = oneOf (" \r\t\n").`+` // whitespace
-    private val com: RL = ";".toRL `~` notOneOf ("\r\n").`*` // single-line comment
+    private val ch:     RL = "\\".toRL `~` AnyChar
+    private val id:     RL = (('A' thru 'Z') `||` ('a' thru 'z') `||` ('0' thru '9') `||` oneOf("-+/*_?%$#&^=!@<>:")).`+`
+    private val kw:     RL = ":".toRL `~` id
+    private val ws:     RL = oneOf (" \r\t\n").`+` // whitespace
+    private val com:    RL = ";".toRL `~` notOneOf ("\r\n").`*` // single-line comment
+
+    // Java numbers are crazy
+    private val dot:    RL = ".".toRL
+    private val exp:    RL = oneOf("eE")
+    private val int:    RL = "-".toRL.`?` `~` ('0' thru '9').`+`
+    private val dec:    RL = (("-".toRL.`?` `~` dot.`?`) `||` (int `~` dot)) `~` int `~` (exp `~` int).`?`
 
     // States:
     override val MAIN:        MajorLexerState                     = State()
@@ -49,8 +59,11 @@ class KLispLexer : NBL() {
         MAIN apply END     apply { terminate() }
         MAIN apply ws      apply { }
         MAIN apply com     apply { }
-        MAIN apply int     over  { cs -> emit(IntToken(cs.joinToString("").toInt())) }
+        MAIN apply int     over  { cs -> emit(IntToken(cs.joinToString(""))) }
+        MAIN apply dec     over  { cs -> emit(DecToken(cs.joinToString(""))) }
+        MAIN apply kw      over  { cs -> emit(KeywordToken(cs.joinToString(""))) }
         MAIN apply id      over  { cs -> emit(SymbolToken(cs.joinToString(""))) }
+        MAIN apply ch      over  { cs -> emit(CharToken(cs[1])) }
 
         // Strings
         STRING.update("\"")        {  s ,  _  -> emit(StringToken(s.reversed.joinToString(""))); MAIN }
@@ -65,7 +78,7 @@ class KLispLexer : NBL() {
         // quick tests...
         @JvmStatic
         fun main(args: Array<String>) {
-            val input = "(+ 1  true \"aaa bbb\" if then else)"
+            val input = """ \na """
             val stream = LiveStream(input)
             val lexer = KLispLexer()
             val start = Platform.getTimeNanos()

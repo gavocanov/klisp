@@ -82,13 +82,13 @@ data class StringToken(val value: String) : Token() {
 
     override fun hashCode(): Int = value.hashCode()
     override fun equals(other: Any?) = value == other
-    override fun toString(): String = "\"$value\""
+    override fun toString(): String = value
 }
 
 /**
  * Integer tokens.
  */
-data class IntToken(val value: Int) : Token() {
+data class IntToken(val value: String) : Token() {
     companion object {
         const val tag: String = "Int"
     }
@@ -103,7 +103,28 @@ data class IntToken(val value: Int) : Token() {
 
     override fun hashCode(): Int = value.hashCode()
     override fun equals(other: Any?) = value == other
-    override fun toString(): String = "$value"
+    override fun toString(): String = value
+}
+
+/**
+ * Decimal tokens.
+ */
+data class DecToken(val value: String) : Token() {
+    companion object {
+        const val tag: String = "Dec"
+    }
+
+    override val isParsingMarker: Boolean = false
+    override val tag: TokenTag = Companion.tag
+
+    override fun localCompare(other: Token): Int {
+        other as DecToken
+        return value.compareTo(other.value)
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = value
 }
 
 /**
