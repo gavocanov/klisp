@@ -1,6 +1,6 @@
 package klisp
 
-import klisp.parser.parse
+import klisp.parser.derivativeParse
 
 var PROFILE = false
 var DEBUG = false
@@ -27,7 +27,7 @@ fun main(args: Array<String>) {
         if (line !== null) {
             val res = try {
                 val _start = if (PROFILE) Platform.getTimeNanos() else 0
-                val r = eval(parse(line))
+                val r = eval(derivativeParse(line))
                 if (PROFILE) LOGGER.trace(":eval/parse ${took(_start)}")
                 Platform.saveToHistory(line, historyFileName, historyLoaded)
                 r

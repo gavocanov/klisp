@@ -62,6 +62,42 @@ abstract class Token : Comparable<Token> {
 }
 
 /**
+ * Open brace tokens.
+ */
+data class OpenBraceToken(val value: String) : Token() {
+    override val isParsingMarker: Boolean = false
+    override val clazz: String = value
+    override val tag: TokenTag = value
+
+    override fun localCompare(other: Token): Int {
+        other as OpenBraceToken
+        return value.compareTo(other.value)
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "[$value]"
+}
+
+/**
+ * Closing brace tokens.
+ */
+data class CloseBraceToken(val value: String) : Token() {
+    override val isParsingMarker: Boolean = false
+    override val clazz: String = value
+    override val tag: TokenTag = value
+
+    override fun localCompare(other: Token): Int {
+        other as CloseBraceToken
+        return value.compareTo(other.value)
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = "[$value]"
+}
+
+/**
  * Punctuation tokens.
  */
 data class PunctToken(val value: String) : Token() {
@@ -182,5 +218,26 @@ data class CharToken(val value: Char) : Token() {
     override fun hashCode(): Int = value.hashCode()
     override fun equals(other: Any?) = value == other
     override fun toString(): String = "'$value'"
+}
+
+/**
+ * Keyword tokens.
+ */
+data class KeywordToken(val value: String) : Token() {
+    companion object {
+        const val tag: String = "Keyword"
+    }
+
+    override val isParsingMarker: Boolean = false
+    override val tag: TokenTag = KeywordToken.tag
+
+    override fun localCompare(other: Token): Int {
+        other as KeywordToken
+        return value.compareTo(other.value)
+    }
+
+    override fun hashCode(): Int = value.hashCode()
+    override fun equals(other: Any?) = value == other
+    override fun toString(): String = value
 }
 

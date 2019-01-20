@@ -75,14 +75,11 @@ inline val String.rest: String
         else -> ""
     }
 
-fun <T> T.toListOf(): List<T> = listOf(this)
-
-@Suppress("UNCHECKED_CAST")
-infix fun <T> T.cons(list: Iterable<T>): List<T> =
-        if (this is List<*>) (this as List<T>) + list
-        else listOf(this) + list
-
+val <T> T.singletonList: List<T> get() = listOf(this)
+infix fun <T> T.cons(l: Iterable<T>): List<T> = listOf(this) + l
 infix fun <T> T.cons(e: T): List<T> = listOf(this, e)
+infix fun <T> List<T>.cons(e: T): List<T> = this + e
+infix fun <T> List<T>.cons(l: Iterable<T>): List<T> = this + l
 
 /**
  * split by space not contained in "", '', [] and {}
@@ -108,21 +105,21 @@ class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
 
     // those are just proxies and should not be used, here for completeness
 
-    override val entries: MutableSet<MutableMap.MutableEntry<K, V>> = (innerMap.entries + map.entries).toMutableSet()
-    override val keys: MutableSet<K> = (innerMap.keys + map.keys).toMutableSet()
-    override val values: MutableCollection<V> = (innerMap.values + map.values).toMutableList()
+    override val entries: MutableSet<MutableMap.MutableEntry<K, V>> get() = (innerMap.entries + map.entries).toMutableSet()
+    override val keys: MutableSet<K> get() = (innerMap.keys + map.keys).toMutableSet()
+    override val values: MutableCollection<V> get() = (innerMap.values + map.values).toMutableList()
 
     // from here on we deal with the stuff
 
     override val size: Int = innerMap.size + map.size
     override fun clear() = innerMap.clear()
-    override fun containsKey(key: K): Boolean = innerMap.containsKey(key) || map.containsKey(key)
-    override fun containsValue(value: V): Boolean = innerMap.containsValue(value) || map.containsValue(value)
-    override fun get(key: K): V? = innerMap[key] ?: map[key]
+    override infix fun containsKey(key: K): Boolean = innerMap.containsKey(key) || map.containsKey(key)
+    override infix fun containsValue(value: V): Boolean = innerMap.containsValue(value) || map.containsValue(value)
+    override infix fun get(key: K): V? = innerMap[key] ?: map[key]
     override fun isEmpty(): Boolean = innerMap.isEmpty() && map.isEmpty()
     override fun put(key: K, value: V): V? = innerMap.put(key, value)
-    override fun putAll(from: Map<out K, V>) = innerMap.putAll(from)
-    override fun remove(key: K): V? = innerMap.remove(key)
+    override infix fun putAll(from: Map<out K, V>) = innerMap.putAll(from)
+    override infix fun remove(key: K): V? = innerMap.remove(key)
 }
 
 /**
@@ -181,7 +178,6 @@ object None : Option<Nothing>() {
     override val isEmpty: Boolean = true
     override fun toString() = "None"
     override operator fun component1(): Nothing? = null
-    val unapply = null to null
     override fun toNullable(): Nothing? = null
 }
 

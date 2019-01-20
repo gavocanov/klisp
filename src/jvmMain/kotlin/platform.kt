@@ -106,18 +106,13 @@ actual class Queue<T> actual constructor() : IQueue<T> {
             q.plusAssign(a)
 }
 
-actual class FirstSet<T : Comparable<T>> : TreeSet<T>, Set<T> {
-    actual constructor() : super()
-    actual constructor(from: T) : super(setOf(from).sorted())
-}
-
 actual open class SortedSet<T : Comparable<T>> : TreeSet<T>, Set<T> {
     actual constructor()
     actual constructor(from: Collection<T>) : super(from.sorted())
     actual constructor(from: T) : super(setOf(from).sorted())
 }
 
-actual class FP actual constructor() : IFP {
+actual class FixedPoint actual constructor() : IFixedPoint {
     private var stabilized = ThreadLocal<Boolean>()
     private var running = ThreadLocal<Boolean>()
     private var changed = ThreadLocal<Boolean>()

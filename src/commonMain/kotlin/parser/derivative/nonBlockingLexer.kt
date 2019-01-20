@@ -193,7 +193,7 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Utility to reduce boilerplate
          */
-        infix fun apply(s: String): Matchable<C> = apply(s.toRL())
+        infix fun apply(s: String): Matchable<C> = apply(s.toRL)
 
         /**
          * Adds a rule to this state which matches regex, fires action and
@@ -212,7 +212,7 @@ abstract class NonBlockingLexer<C : Char, A> {
         /**
          * Utility to reduce boilerplate
          */
-        infix fun switchesOn(s: String): Switchable<C, A> = switchesOn(s.toRL())
+        infix fun switchesOn(s: String): Switchable<C, A> = switchesOn(s.toRL)
     }
 
     /**
@@ -240,7 +240,7 @@ abstract class NonBlockingLexer<C : Char, A> {
          * Utility to reduce boilerplate
          */
         fun update(s: String, stateAction: (S, List<C>) -> LexerState) =
-                update(s.toRL(), stateAction)
+                update(s.toRL, stateAction)
     }
 
     /**
@@ -384,16 +384,18 @@ abstract class NonBlockingLexer<C : Char, A> {
     /**
      * Char to regex utility
      */
-    private fun Char.toRL(): RegularLanguage = Character(this)
+    private val Char.toRL: RegularLanguage
+        get() = Character(this)
 
     /**
      * String to regex utility
      */
-    protected fun String.toRL(): RegularLanguage = when {
-        this.length == 1 -> Character(first)
-        this.isNotEmpty() -> Catenation(first.toRL(), rest.toRL())
-        else -> ε
-    }
+    protected val String.toRL: RegularLanguage
+        get() = when {
+            this.length == 1 -> Character(first)
+            this.isNotEmpty() -> Catenation(first.toRL, rest.toRL)
+            else -> ε
+        }
 
     protected infix fun Char.thru(end: Char): RegularLanguage = CharSet((this..end).toSet())
 }

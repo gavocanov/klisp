@@ -52,14 +52,10 @@ actual object Platform {
 /**
  * Not supported for now in native, throws "mutation attempt of frozen kotlin.collections.HashMap"
  */
+@ThreadLocal
 actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap<I, O>,
                                               private val fn: (I) -> O) : (I) -> O {
     override fun invoke(p1: I): O = fn(p1)
-}
-
-actual class FirstSet<T : Comparable<T>> : SortedSet<T>, Set<T> {
-    actual constructor(): super()
-    actual constructor(from: T): super(setOf(from).sorted())
 }
 
 actual open class SortedSet<T : Comparable<T>> : Set<T> {
@@ -105,7 +101,8 @@ actual class Queue<T> actual constructor() : IQueue<T> {
     override fun toString(): String = q.toString()
 }
 
-actual class FP actual constructor(): IFP {
+@ThreadLocal
+actual class FixedPoint actual constructor(): IFixedPoint {
     private var stabilized = false
     private var running = false
     private var changed = false

@@ -10,9 +10,6 @@ pluginManagement {
             if (requested.id.id == "kotlinx-serialization-native") {
                 useModule("org.jetbrains.kotlin:kotlin-serialization-native:${requested.version}")
             }
-            if (requested.id.id == "kotlinx-atomicfu") {
-                useModule("org.jetbrains.kotlinx:atomicfu:${requested.version}")
-            }
         }
     }
 

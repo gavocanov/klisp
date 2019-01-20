@@ -4,14 +4,17 @@ import klisp.eval
 import klisp.exp
 import klisp.parser.hasBalancedPairOf
 import klisp.ok
-import klisp.parser.parse
+import klisp.parser.derivativeParse
+import klisp.parser.regexParse
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
+private const val DEBUG = false
+
 @ExperimentalUnsignedTypes
-fun _eval(s: String): exp = eval(parse(s))
-        .also { println("$s -> $it") }
+fun _eval(s: String): exp = eval(derivativeParse(s))
+        .also { if (DEBUG) println("$s -> $it") }
 
 @ExperimentalUnsignedTypes
 private fun _eq(s: String, exp: exp) = assertEquals(exp, _eval(s), s)

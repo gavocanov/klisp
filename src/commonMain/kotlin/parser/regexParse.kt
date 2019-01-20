@@ -33,15 +33,15 @@ fun tokenize(s: String, dump: Boolean = false): List<String> {
 }
 
 @ExperimentalUnsignedTypes
-fun parse(s: String): exp {
+fun regexParse(s: String): exp {
     val balance = s.hasBalancedRoundBrackets()
     if (balance.nok)
         throw IllegalArgumentException("unbalanced brackets <left: ${balance.left}, right: ${balance.right}>")
-    return readFromTokens(tokenize(s, DEBUG).toMutableList())
+    return readFromStringTokens(tokenize(s, DEBUG).toMutableList())
 }
 
 @ExperimentalUnsignedTypes
-fun readFromTokens(tokens: MutableList<String>): exp {
+fun readFromStringTokens(tokens: MutableList<String>): exp {
     if (tokens.isEmpty()) return unit
     val token = tokens.first()
     tokens.removeAt(0)
@@ -50,7 +50,7 @@ fun readFromTokens(tokens: MutableList<String>): exp {
             val list = mutableListOf<exp>()
             try {
                 while (tokens[0] != ")")
-                    list.add(readFromTokens(tokens))
+                    list.add(readFromStringTokens(tokens))
                 tokens.removeAt(0)
             } catch (t: Throwable) {
                 throw IllegalArgumentException("parsing failed")
@@ -83,4 +83,3 @@ fun parseAtom(s: String): atom = when {
         else value
     }
 }
-

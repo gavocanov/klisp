@@ -34,7 +34,7 @@ class LiveStreamSource<A> {
     /**
      * @return the next input.
      */
-    fun next(): A = queue.dequeue()
+    val next: A get() = queue.dequeue()
 
     /**
      * Adds another element to this source.
@@ -90,6 +90,18 @@ open class LiveStream<A>(open val source: LiveStreamSource<A>) {
         }
     }
 
+    val toList by lazy {
+        var (h, t) = head to tail
+        val out = mutableListOf<A>()
+        while (!t.isPlugged) {
+            out.add(h)
+            h = t.head
+            t = t.tail
+        }
+        out.add(h)
+        out
+    }
+
     private var headCache: Option<A> = None
     private var tailCache: Option<LiveStream<A>> = None
 
@@ -112,7 +124,7 @@ open class LiveStream<A>(open val source: LiveStreamSource<A>) {
             is None -> {
                 if (isPlugged)
                     throw IllegalStateException("can't pull a plugged head")
-                val value = Some(source.next())
+                val value = Some(source.next)
                 headCache = value
                 value()
             }
