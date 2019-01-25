@@ -11,6 +11,7 @@ import linenoise.linenoiseHistorySetMaxLen
 import linenoise.linenoiseSetMultiLine
 import platform.posix.fclose
 import platform.posix.fopen
+import kotlin.native.concurrent.ThreadLocal
 
 actual object Platform {
     actual fun getHistoryFileName(): String {
