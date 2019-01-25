@@ -183,7 +183,7 @@ object None : Option<Nothing>() {
 }
 
 /**
- * Wraps an instance of T (or null) into an [Option]:
+ * Wraps an instance of [T] (or null) into an [Option]:
  *
  * ```kotlin
  * val a: String? = "str"

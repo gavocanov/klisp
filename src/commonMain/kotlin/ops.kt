@@ -216,7 +216,7 @@ fun lex(args: exps): string {
     val stream = LiveStream(s.value.drop(1).dropLast(1))
     val lexer = KLispLexer()
     lexer.lex(stream)
-    return string(lexer.output.toString())
+    return string(lexer.output.toList.toString())
 }
 
 fun json(args: exps): string {
