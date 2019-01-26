@@ -11,6 +11,9 @@ Source code for console colors is included (because I'm too lazy for a proper mu
 from the excellent [mordant](https://github.com/ajalt/mordant) and [colormath](https://github.com/ajalt/colormath) libs,
 originally only for JVM.
 
+I'm using here a [derivative lexer](http://matt.might.net/articles/parsing-with-derivatives/) which I ported from 
+[scala](http://matt.might.net/articles/parsing-with-derivatives/code/combined.tar.gz) to kotlin, pretty happy with it.
+
 ## build
 
 * ```make dirmake``` - to prepare native target dirs
