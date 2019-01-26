@@ -59,7 +59,7 @@ actual object Platform {
         throw t
     }
 
-    actual fun version(): String = "jvm"
+    actual fun platformId(): String = "jvm"
     actual fun exit(c: Int) = System.exit(c)
     actual fun getTimeNanos(): Long = System.nanoTime()
 

@@ -1,6 +1,9 @@
 pluginManagement {
     resolutionStrategy {
         eachPlugin {
+            if (requested.id.id == "com.peterabeles.gversion") {
+                useModule("gradle.plugin.com.peterabeles.gversion:gversion-plugin:${requested.version}")
+            }
             if (requested.id.id == "com.github.johnrengelman.shadow") {
                 useModule("com.github.jengelman.gradle.plugins:shadow:${requested.version}")
             }
@@ -34,3 +37,4 @@ buildCache {
         removeUnusedEntriesAfterDays = 10
     }
 }
+

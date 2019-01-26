@@ -45,7 +45,7 @@ actual object Platform {
 
     actual fun getTimeNanos(): Long = kotlin.system.getTimeNanos()
 
-    actual fun version(): String = "nat"
+    actual fun platformId(): String = "nat"
 
     actual fun getenv(s: String): String? = platform.posix.getenv(s)?.toKString()
     actual fun getProperty(s: String): String? = getenv(s)
