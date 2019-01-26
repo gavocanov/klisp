@@ -27,9 +27,19 @@ fun main(args: Array<String>) {
 
         if (line !== null) {
             val res = try {
-                val _start = if (PROFILE) Platform.getTimeNanos() else 0
-                val r = eval(derivativeParse(line))
-                if (PROFILE) LOGGER.trace(":eval/parse ${took(_start)}")
+                var _start = if (PROFILE) Platform.getTimeNanos() else 0
+                val parsed = derivativeParse(line)
+                val parseTook = took(_start)
+
+                _start = if (PROFILE) Platform.getTimeNanos() else 0
+                val r = eval(parsed)
+                val evalTook = took(_start)
+
+                if (PROFILE) {
+                    LOGGER.trace(":parse $parseTook")
+                    LOGGER.trace(":eval $evalTook")
+                }
+
                 Platform.saveToHistory(line, historyFileName, historyLoaded)
                 r
             } catch (t: Throwable) {

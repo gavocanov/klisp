@@ -191,8 +191,8 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
         val _start = if (PROFILE) Platform.getTimeNanos() else 0
         val res = func(p1)
         when {
-            PROFILE && DEBUG -> LOGGER.trace(":func ${parseMeta(meta)} ${took(_start)}")
-            DEBUG -> LOGGER.debug(":func ${parseMeta(meta)}")
+            PROFILE && DEBUG -> LOGGER.trace(":func ($p1) -> $res, ${took(_start)}")
+            DEBUG -> LOGGER.debug(":func ($p1) -> $res")
             PROFILE -> LOGGER.trace(":func ${took(_start)}")
         }
         return res

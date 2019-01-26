@@ -32,7 +32,7 @@ fun derivativeParse(s: String): exp {
     val stream = LiveStream(s)
     val lexer = KLispLexer()
     lexer.lex(stream)
-    return readFromTokens(lexer.output.toList.toMutableList())
+    return readFromTokens(lexer.output.toList)
 }
 
 @ExperimentalUnsignedTypes

@@ -95,10 +95,10 @@ fun splitNotSurrounded(s: String): List<String> =
 object LOGGER {
     private val C = TermColors()
     fun trace(msg: Any?) = println(C.gray(msg.toString()))
-    fun debug(msg: Any?) = println(C.magenta(msg.toString()))
-    fun info(msg: Any?) = println(C.blue(msg.toString()))
-    fun warn(msg: Any?) = println(C.yellow(msg.toString()))
-    fun error(msg: Any?) = println(C.red(msg.toString()))
+    fun debug(msg: Any?) = println(C.yellow(msg.toString()))
+    fun info(msg: Any?) = println(C.brightBlue(msg.toString()))
+    fun warn(msg: Any?) = println(C.brightYellow(msg.toString()))
+    fun error(msg: Any?) = println(C.brightRed(msg.toString()))
 }
 
 class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
