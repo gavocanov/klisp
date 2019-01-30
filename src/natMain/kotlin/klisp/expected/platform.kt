@@ -50,6 +50,12 @@ actual object Platform {
     actual fun getenv(s: String): String? = platform.posix.getenv(s)?.toKString()
     actual fun getProperty(s: String): String? = getenv(s)
     actual fun console(): Boolean = true
+
+    actual fun <T> copyArray(src: Array<T>, srcPos: Int, dest: Array<T?>, destPos: Int, length: Int) {
+        (0..length).forEach {
+            dest[destPos + it] = src[srcPos + it]
+        }
+    }
 }
 
 /**
@@ -102,6 +108,22 @@ actual class Queue<T> actual constructor() : IQueue<T> {
     }
 
     override fun toString(): String = q.toString()
+}
+
+actual class Stack<T> actual constructor() : IStack<T> {
+    private val s: ArrayList<T> = arrayListOf()
+
+    override fun push(e: T) {
+        s.add(0, e)
+    }
+
+    override fun pop(): T {
+        val r = s[s.size]
+        s.removeAt(s.size)
+        return r
+    }
+
+    override fun isNotEmpty(): Boolean = s.isNotEmpty()
 }
 
 @ThreadLocal

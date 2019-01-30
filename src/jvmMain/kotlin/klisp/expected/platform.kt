@@ -12,6 +12,7 @@ import org.jline.utils.AttributedStyle
 import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.ArrayDeque
+import java.util.Stack
 import java.util.TreeSet
 
 val HISTORY = DefaultHistory()
@@ -66,6 +67,9 @@ actual object Platform {
     actual fun getenv(s: String): String? = System.getenv(s)
     actual fun getProperty(s: String): String? = System.getProperty(s)
     actual fun console(): Boolean = System.console() !== null
+
+    actual fun <T> copyArray(src: Array<T>, srcPos: Int, dest: Array<T?>, destPos: Int, length: Int) =
+            System.arraycopy(src, srcPos, dest, destPos, length)
 }
 
 actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap<I, O>,
@@ -86,6 +90,17 @@ actual class Queue<T> actual constructor() : IQueue<T> {
 
     override fun plusAssign(a: T): Unit =
             q.plusAssign(a)
+}
+
+actual class Stack<T> actual constructor() : IStack<T> {
+    private val s: Stack<T> = Stack()
+
+    override fun push(e: T) {
+        s.push(e)
+    }
+
+    override fun pop(): T = s.pop()
+    override fun isNotEmpty(): Boolean = s.isNotEmpty()
 }
 
 actual open class SortedSet<T : Comparable<T>> : TreeSet<T>, Set<T> {
@@ -125,3 +140,4 @@ actual class FixedPoint actual constructor() : IFixedPoint {
         master.set(null)
     }
 }
+

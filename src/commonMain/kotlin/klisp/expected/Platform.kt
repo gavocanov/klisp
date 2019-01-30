@@ -12,4 +12,5 @@ expect object Platform {
     fun getTimeNanos(): Long
     fun platformId(): String
     fun strFormat(d: Double): String
+    fun <T> copyArray(src: Array<T>, srcPos: Int, dest: Array<T?>, destPos: Int, length: Int)
 }

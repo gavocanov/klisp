@@ -7,8 +7,8 @@ package klisp;
 const val MAVEN_GROUP : String = "org.cth.klisp"
 const val MAVEN_NAME : String = "klisp"
 const val VERSION : String = "0.0.1"
-const val GIT_REVISION : Int = 29
-const val GIT_SHA : String = "78058e59975f3528efc0c6f2f8cf759b40f2f646"
-const val GIT_DATE : String = "2019-01-26T18:03:29Z"
-const val BUILD_DATE : String = "2019-01-26T18:04:40Z"
-const val BUILD_UNIX_TIME : Long = 1548525880419L
+const val GIT_REVISION : Int = 31
+const val GIT_SHA : String = "43c6c9e8dd3ee5e8b6ab74d7cd6b269d0677b696"
+const val GIT_DATE : String = "2019-01-26T18:13:07Z"
+const val BUILD_DATE : String = "2019-01-30T18:25:48Z"
+const val BUILD_UNIX_TIME : Long = 1548872748296L

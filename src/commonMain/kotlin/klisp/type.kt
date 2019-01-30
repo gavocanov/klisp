@@ -107,7 +107,7 @@ object nil : atom, serializable {
     override fun toString(): String = ":nil"
 }
 
-object unit : atom {
+object unit : atom, serializable {
     override fun toJson(): String = Json.stringify(String.serializer(), "unit")
     override fun fromJson(s: String): atom = this
     override var meta: exp? = null
