@@ -143,8 +143,9 @@ abstract class AbstractList<E> : AbstractCollection<E>(), ImmutableList<E> {
             return parent[size - index]
         }
 
-        override fun add(element: E): ImmutableList<E> =// We could just prepend to the parent but that makes this O(n) so instead do
+        // We could just prepend to the parent but that makes this O(n) so instead do
         // the proper reverse so this is amortized O(1) as expected
+        override fun add(element: E): ImmutableList<E> =
                 asSequence().toImmutableList().add(element)
 
         override fun clear(): ImmutableList<E> = emptyImmutableList()
@@ -158,8 +159,11 @@ abstract class AbstractList<E> : AbstractCollection<E>(), ImmutableList<E> {
         override fun reversed(): ImmutableList<E> = parent
     }
 
-    private class ImmutableSubList<E>(private val parent: ImmutableList<E>, private val fromIndex: Int,
-                                      private val toIndex: Int) : AbstractList<E>() {
+    private class ImmutableSubList<E>(private val parent: ImmutableList<E>,
+                                      private val fromIndex: Int,
+                                      private val toIndex: Int)
+        : AbstractList<E>() {
+
         override val size = toIndex - fromIndex
 
         override fun get(index: Int): E {
@@ -168,7 +172,8 @@ abstract class AbstractList<E> : AbstractCollection<E>(), ImmutableList<E> {
             return parent[index + fromIndex]
         }
 
-        override fun add(element: E): ImmutableList<E> = ImmutableSubList(parent.add(toIndex, element), fromIndex, toIndex + 1)
+        override fun add(element: E): ImmutableList<E> =
+                ImmutableSubList(parent.add(toIndex, element), fromIndex, toIndex + 1)
 
         override fun clear(): ImmutableList<E> = emptyImmutableList()
 

@@ -18,8 +18,10 @@ package com.probablycoding.persistent
 import com.probablycoding.persistent.impl.PersistentTreeMap
 
 class PersistentTreeMapTest : AbstractSortedMapTest() {
-    override fun <K, V> buildMap(comparator: Comparator<K>, vararg entries: Pair<K, V>): ImmutableSortedMap<K, V> = PersistentTreeMap.of(comparator, *entries)
+    override fun <K, V> buildMap(comparator: Comparator<K>, vararg entries: Pair<K, V>): ImmutableSortedMap<K, V> =
+            PersistentTreeMap.of(comparator, *entries)
 
     @Suppress("UNCHECKED_CAST")
-    override fun <K, V> buildMap(vararg entries: Pair<K, V>): ImmutableSortedMap<K, V> = PersistentTreeMap.of(*(entries as Array<Pair<Comparable<Any?>, V>>)) as PersistentTreeMap<K, V>
+    override fun <K, V> buildMap(vararg entries: Pair<K, V>): ImmutableSortedMap<K, V> =
+            PersistentTreeMap.of(*(entries as Array<Pair<Comparable<Any?>, V>>)) as PersistentTreeMap<K, V>
 }

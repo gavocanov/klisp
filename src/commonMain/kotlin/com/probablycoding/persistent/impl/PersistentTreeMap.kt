@@ -15,36 +15,38 @@
  */
 package com.probablycoding.persistent.impl
 
-import klisp.expected.Queue
 import klisp.expected.Stack
 
-class PersistentTreeMap<K, V> private constructor(override val comparator: Comparator<in K>, override val size: Int,
-                                                  private val root: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>) : com.probablycoding.persistent.impl.AbstractSortedMap<K, V>() {
+class PersistentTreeMap<K, V> private constructor(override val comparator: Comparator<in K>,
+                                                  override val size: Int,
+                                                  private val root: PersistentTreeMap.Node<K, V>)
+    : AbstractSortedMap<K, V>() {
+
     override fun containsKey(key: K): Boolean = find(root, key) != null
 
     override operator fun get(key: K): V? = find(root, key)?.value
 
-    override fun clear(): com.probablycoding.persistent.impl.PersistentTreeMap<K, V> = com.probablycoding.persistent.impl.PersistentTreeMap.Companion.empty(comparator)
+    override fun clear(): PersistentTreeMap<K, V> = PersistentTreeMap.empty(comparator)
 
-    override fun put(key: K, value: V): com.probablycoding.persistent.impl.PersistentTreeMap<K, V> {
+    override fun put(key: K, value: V): PersistentTreeMap<K, V> {
         val (added, newRoot) = put(root, key, value)
         return if (added) {
-            com.probablycoding.persistent.impl.PersistentTreeMap(comparator, size + 1, newRoot)
+            PersistentTreeMap(comparator, size + 1, newRoot)
         } else {
-            com.probablycoding.persistent.impl.PersistentTreeMap(comparator, size, newRoot)
+            PersistentTreeMap(comparator, size, newRoot)
         }
     }
 
-    override fun remove(key: K): com.probablycoding.persistent.impl.PersistentTreeMap<K, V> {
+    override fun remove(key: K): PersistentTreeMap<K, V> {
         val (removed, newRoot) = remove(root, key)
         return if (removed) {
-            com.probablycoding.persistent.impl.PersistentTreeMap(comparator, size - 1, newRoot)
+            PersistentTreeMap(comparator, size - 1, newRoot)
         } else {
-            com.probablycoding.persistent.impl.PersistentTreeMap(comparator, size, newRoot)
+            PersistentTreeMap(comparator, size, newRoot)
         }
     }
 
-    override fun subMap(fromKey: K, toKey: K): com.probablycoding.persistent.impl.PersistentTreeMap<K, V> {
+    override fun subMap(fromKey: K, toKey: K): PersistentTreeMap<K, V> {
         val compareFromTo = comparator.compare(fromKey, toKey)
         require(compareFromTo <= 0) { "fromKey > toKey" }
 
@@ -55,54 +57,52 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         val compareToFirst = comparator.compare(toKey, first.key)
         val compareToLast = comparator.compare(toKey, last.key)
 
-        if (compareFromTo == 0 || compareFromLast > 0 || compareToFirst < 0) {
-            return com.probablycoding.persistent.impl.PersistentTreeMap.Companion.empty(comparator)
-        } else if (compareFromFirst <= 0 && compareToLast > 0) {
-            return this
-        } else if (compareFromLast == 0) {
-            return com.probablycoding.persistent.impl.PersistentTreeMap.Companion.of(comparator, last)
-        } else {
-            var result = com.probablycoding.persistent.impl.PersistentTreeMap.Companion.empty<K, V>(comparator)
+        return when {
+            compareFromTo == 0 || compareFromLast > 0 || compareToFirst < 0 -> PersistentTreeMap.empty(comparator)
+            compareFromFirst <= 0 && compareToLast > 0 -> this
+            compareFromLast == 0 -> PersistentTreeMap.of(comparator, last)
+            else -> {
+                var result = PersistentTreeMap.empty<K, V>(comparator)
 
-            for ((key, value) in this) {
-                if (comparator.compare(toKey, key) <= 0) {
-                    break
-                } else if (comparator.compare(fromKey, key) <= 0) {
-                    result = result.put(key, value)
+                for ((key, value) in this) {
+                    if (comparator.compare(toKey, key) <= 0) {
+                        break
+                    } else if (comparator.compare(fromKey, key) <= 0) {
+                        result = result.put(key, value)
+                    }
                 }
-            }
 
-            return result
+                result
+            }
         }
     }
 
-    override fun tailMap(fromKey: K): com.probablycoding.persistent.impl.PersistentTreeMap<K, V> {
+    override fun tailMap(fromKey: K): PersistentTreeMap<K, V> {
         val first = firstEntry()
         val last = lastEntry()
         val compareFromFirst = comparator.compare(fromKey, first.key)
         val compareFromLast = comparator.compare(fromKey, last.key)
 
-        if (compareFromLast > 0) {
-            return com.probablycoding.persistent.impl.PersistentTreeMap.Companion.empty(comparator)
-        } else if (compareFromFirst <= 0) {
-            return this
-        } else if (compareFromLast == 0) {
-            return com.probablycoding.persistent.impl.PersistentTreeMap.Companion.of(comparator, last)
-        } else {
-            var result = com.probablycoding.persistent.impl.PersistentTreeMap.Companion.empty<K, V>(comparator)
+        return when {
+            compareFromLast > 0 -> PersistentTreeMap.empty(comparator)
+            compareFromFirst <= 0 -> this
+            compareFromLast == 0 -> PersistentTreeMap.of(comparator, last)
+            else -> {
+                var result = PersistentTreeMap.empty<K, V>(comparator)
 
-            for ((key, value) in this) {
-                if (comparator.compare(fromKey, key) <= 0) {
-                    result = result.put(key, value)
+                for ((key, value) in this) {
+                    if (comparator.compare(fromKey, key) <= 0) {
+                        result = result.put(key, value)
+                    }
                 }
-            }
 
-            return result
+                result
+            }
         }
     }
 
     override fun comparator(): Comparator<in K>? {
-        return if (comparator === com.probablycoding.persistent.impl.PersistentTreeMap.Companion.COMPARABLE_COMPARATOR) {
+        return if (comparator === PersistentTreeMap.COMPARABLE_COMPARATOR) {
             null
         } else {
             comparator
@@ -111,8 +111,8 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
 
     override fun firstEntry(): Map.Entry<K, V> {
         var node = root
-        if (node !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
-            while (node.left !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+        if (node !== PersistentTreeMap.EMPTY_NODE) {
+            while (node.left !== PersistentTreeMap.EMPTY_NODE) {
                 node = node.left
             }
         } else {
@@ -124,8 +124,8 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
 
     override fun lastEntry(): Map.Entry<K, V> {
         var node = root
-        if (node !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
-            while (node.right !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+        if (node !== PersistentTreeMap.EMPTY_NODE) {
+            while (node.right !== PersistentTreeMap.EMPTY_NODE) {
                 node = node.right
             }
         } else {
@@ -143,9 +143,9 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
                 push(root)
             }
 
-            private fun push(root: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>) {
+            private fun push(root: PersistentTreeMap.Node<K, V>) {
                 var node = root
-                while (node !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+                while (node !== PersistentTreeMap.EMPTY_NODE) {
                     stack.push(node)
                     node = node.left
                 }
@@ -161,8 +161,8 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         }
     }
 
-    private fun find(node: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>, key: K): com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>? {
-        return if (node === com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+    private fun find(node: PersistentTreeMap.Node<K, V>, key: K): PersistentTreeMap.Node<K, V>? {
+        return if (node === PersistentTreeMap.EMPTY_NODE) {
             null
         } else {
             val compare = comparator.compare(key, node.key)
@@ -177,13 +177,13 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         }
     }
 
-    private fun put(node: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>, key: K, value: V): Pair<Boolean, com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>> {
-        if (node === com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
-            return true to com.probablycoding.persistent.impl.PersistentTreeMap.Node(1, emptyNode(), emptyNode(), key, value)
+    private fun put(node: PersistentTreeMap.Node<K, V>, key: K, value: V): Pair<Boolean, PersistentTreeMap.Node<K, V>> {
+        if (node === PersistentTreeMap.EMPTY_NODE) {
+            return true to PersistentTreeMap.Node(1, emptyNode(), emptyNode(), key, value)
         } else {
             val compare = comparator.compare(key, node.key)
             val added: Boolean
-            val newNode: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>
+            val newNode: PersistentTreeMap.Node<K, V>
 
             if (compare < 0) {
                 val result = put(node.left, key, value)
@@ -206,11 +206,11 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         }
     }
 
-    private fun remove(node: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>, key: K): Pair<Boolean, com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>> {
+    private fun remove(node: PersistentTreeMap.Node<K, V>, key: K): Pair<Boolean, PersistentTreeMap.Node<K, V>> {
         var removed = false
         var newNode = node
 
-        if (node !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+        if (node !== PersistentTreeMap.EMPTY_NODE) {
             val compare = comparator.compare(node.key, key)
             if (compare == 0 && node.level == 1) {
                 removed = true
@@ -227,15 +227,15 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
                 } else {
                     removed = true
 
-                    if (node.left !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE && node.right !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+                    if (node.left !== PersistentTreeMap.EMPTY_NODE && node.right !== PersistentTreeMap.EMPTY_NODE) {
                         var heir = node.left
-                        while (heir.right !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+                        while (heir.right !== PersistentTreeMap.EMPTY_NODE) {
                             heir = heir.right
                         }
 
                         val result = remove(node.left, heir.key)
                         newNode = node.copy(left = result.second, key = heir.key, value = heir.value)
-                    } else if (node.left !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+                    } else if (node.left !== PersistentTreeMap.EMPTY_NODE) {
                         newNode = node.left
                     } else {
                         newNode = node.right
@@ -252,7 +252,7 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
 
             newNode = skew(newNode)
             newNode = newNode.copy(right = skew(newNode.right))
-            if (newNode.right !== com.probablycoding.persistent.impl.PersistentTreeMap.Companion.EMPTY_NODE) {
+            if (newNode.right !== PersistentTreeMap.EMPTY_NODE) {
                 newNode = newNode.copy(right = newNode.right.copy(right = skew(newNode.right.right)))
             }
             newNode = split(newNode)
@@ -262,35 +262,40 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         return removed to newNode
     }
 
-    private fun skew(node: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>): com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> {
+    private fun skew(node: PersistentTreeMap.Node<K, V>): PersistentTreeMap.Node<K, V> {
         return if (node.level != 0 && node.left.level == node.level) {
             val right = node.copy(left = node.left.right, right = node.right)
-            com.probablycoding.persistent.impl.PersistentTreeMap.Node(node.level, node.left.left, right, node.left.key, node.left.value)
+            PersistentTreeMap.Node(node.level, node.left.left, right, node.left.key, node.left.value)
         } else {
             node
         }
     }
 
-    private fun split(node: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>): com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> {
+    private fun split(node: PersistentTreeMap.Node<K, V>): PersistentTreeMap.Node<K, V> {
         return if (node.level != 0 && node.right.right.level == node.level) {
             val left = node.copy(right = node.right.left)
-            com.probablycoding.persistent.impl.PersistentTreeMap.Node(node.right.level + 1, left, node.right.right, node.right.key, node.right.value)
+            PersistentTreeMap.Node(node.right.level + 1, left, node.right.right, node.right.key, node.right.value)
         } else {
             node
         }
     }
 
-    private class Node<K, V>(val level: Int, left: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>?, right: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V>?, var key: K, var value: V) {
-        val left: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> = left ?: this
-        val right: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> = right ?: this
+    private class Node<K, V>(val level: Int, left: PersistentTreeMap.Node<K, V>?, right: PersistentTreeMap.Node<K, V>?, var key: K, var value: V) {
+        val left: PersistentTreeMap.Node<K, V> = left ?: this
+        val right: PersistentTreeMap.Node<K, V> = right ?: this
 
         init {
             require((left == null && right == null) || level > 0)
         }
 
-        fun copy(level: Int = this.level, left: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> = this.left, right: com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> = this.right, key: K = this.key, value: V = this.value): com.probablycoding.persistent.impl.PersistentTreeMap.Node<K, V> = com.probablycoding.persistent.impl.PersistentTreeMap.Node(level, left, right, key, value)
+        fun copy(level: Int = this.level,
+                 left: PersistentTreeMap.Node<K, V> = this.left,
+                 right: PersistentTreeMap.Node<K, V> = this.right,
+                 key: K = this.key,
+                 value: V = this.value): PersistentTreeMap.Node<K, V> = PersistentTreeMap.Node(level, left, right, key, value)
     }
 
+    @Suppress("unused")
     companion object {
         private val COMPARABLE_COMPARATOR = Comparator<Any?> { first, second ->
             @Suppress("UNCHECKED_CAST")
@@ -311,8 +316,10 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
 
         fun <K, V> empty(comparator: Comparator<in K>): PersistentTreeMap<K, V> = PersistentTreeMap(comparator, 0, emptyNode())
 
-        fun <T, K : Comparable<K>, V> fromSequence(sequence: Sequence<T>, keySelector: (T) -> K,
-                                                   valueTransform: (T) -> V): PersistentTreeMap<K, V> = sequence.fold(empty()) { map, element -> map.put(keySelector(element), valueTransform(element)) }
+        fun <T, K : Comparable<K>, V> fromSequence(sequence: Sequence<T>,
+                                                   keySelector: (T) -> K,
+                                                   valueTransform: (T) -> V): PersistentTreeMap<K, V> =
+                sequence.fold(empty()) { map, element -> map.put(keySelector(element), valueTransform(element)) }
 
         fun <T, K, V> fromSequence(comparator: Comparator<in K>, sequence: Sequence<T>, keySelector: (T) -> K,
                                    valueTransform: (T) -> V): PersistentTreeMap<K, V> {
@@ -337,12 +344,16 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
             }
         }
 
-        fun <K : Comparable<K>, V> of(vararg entries: Map.Entry<K, V>): PersistentTreeMap<K, V> = entries.fold(empty()) { map, entry -> map.put(entry.key, entry.value) }
+        fun <K : Comparable<K>, V> of(vararg entries: Map.Entry<K, V>): PersistentTreeMap<K, V> =
+                entries.fold(empty()) { map, entry -> map.put(entry.key, entry.value) }
 
-        fun <K, V> of(comparator: Comparator<in K>, vararg entries: Map.Entry<K, V>): PersistentTreeMap<K, V> = entries.fold(empty(comparator)) { map, entry -> map.put(entry.key, entry.value) }
+        fun <K, V> of(comparator: Comparator<in K>, vararg entries: Map.Entry<K, V>): PersistentTreeMap<K, V> =
+                entries.fold(empty(comparator)) { map, entry -> map.put(entry.key, entry.value) }
 
-        fun <K : Comparable<K>, V> of(vararg entries: Pair<K, V>): PersistentTreeMap<K, V> = entries.fold(empty()) { map, entry -> map.put(entry.first, entry.second) }
+        fun <K : Comparable<K>, V> of(vararg entries: Pair<K, V>): PersistentTreeMap<K, V> =
+                entries.fold(empty()) { map, entry -> map.put(entry.first, entry.second) }
 
-        fun <K, V> of(comparator: Comparator<in K>, vararg entries: Pair<K, V>): PersistentTreeMap<K, V> = entries.fold(empty(comparator)) { map, entry -> map.put(entry.first, entry.second) }
+        fun <K, V> of(comparator: Comparator<in K>, vararg entries: Pair<K, V>): PersistentTreeMap<K, V> =
+                entries.fold(empty(comparator)) { map, entry -> map.put(entry.first, entry.second) }
     }
 }

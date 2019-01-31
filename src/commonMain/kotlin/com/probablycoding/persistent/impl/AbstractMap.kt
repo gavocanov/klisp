@@ -20,22 +20,18 @@ import com.probablycoding.persistent.ImmutableMap
 import com.probablycoding.persistent.ImmutableSet
 
 abstract class AbstractMap<K, V> : ImmutableMap<K, V> {
-    override val entries: ImmutableSet<Map.Entry<K, V>>
-        get() = ImmutableEntrySet(this)
-    override val keys: ImmutableSet<K>
-        get() = ImmutableKeySet(this)
-    override val values: ImmutableCollection<@UnsafeVariance V>
-        get() = ImmutableValueCollection(this)
+    override val entries: ImmutableSet<Map.Entry<K, V>> get() = ImmutableEntrySet(this)
+    override val keys: ImmutableSet<K> get() = ImmutableKeySet(this)
+    override val values: ImmutableCollection<@UnsafeVariance V> get() = ImmutableValueCollection(this)
 
     override fun containsKey(key: K): Boolean = (this as Map<K, V>).any { it.key == key }
-
     override fun containsValue(value: @UnsafeVariance V): Boolean = (this as Map<K, V>).any { it.value == value }
-
     override operator fun get(key: K): V? = entries.firstOrNull { it.key == key }?.value
-
     override fun isEmpty(): Boolean = size == 0
-
-    override fun putAll(from: Map<out K, V>): ImmutableMap<K, V> = from.entries.fold(this as ImmutableMap<K, V>) { map, entry -> map.put(entry.key, entry.value) }
+    override fun putAll(from: Map<out K, V>): ImmutableMap<K, V> =
+            from.entries.fold(this as ImmutableMap<K, V>) { map, entry ->
+                map.put(entry.key, entry.value)
+            }
 
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
@@ -47,7 +43,6 @@ abstract class AbstractMap<K, V> : ImmutableMap<K, V> {
     }
 
     override fun hashCode(): Int = entries.fold(0) { hash, entry -> hash + entry.hashCode() }
-
     override fun toString(): String = entries.joinToString(", ", "{", "}", -1, "...") { "${it.key}=${it.value}" }
 
     private class ImmutableEntrySet<K, V>(private val parent: ImmutableMap<K, V>) : AbstractSet<Map.Entry<K, V>>() {

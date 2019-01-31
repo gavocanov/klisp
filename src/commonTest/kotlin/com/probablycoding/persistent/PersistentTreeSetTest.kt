@@ -19,5 +19,6 @@ import com.probablycoding.persistent.impl.PersistentTreeSet
 
 class PersistentTreeSetTest : AbstractSortedSetTest() {
     @Suppress("UNCHECKED_CAST")
-    override fun <E> build(vararg elements: E): PersistentTreeSet<E> = PersistentTreeSet.of(*(elements as Array<Comparable<Any?>>)) as PersistentTreeSet<E>
+    override fun <E> build(vararg elements: E): PersistentTreeSet<E> =
+            PersistentTreeSet.of(*(elements as Array<Comparable<Any?>>)) as PersistentTreeSet<E>
 }

@@ -43,7 +43,7 @@ abstract class AbstractSortedMap<K, V> : AbstractMap<K, V>(), ImmutableSortedMap
     override fun lastValue(): V = lastEntry().value
 
     private class ImmutableSortedEntrySet<K, V>(private val parent: AbstractSortedMap<K, V>) : AbstractSortedSet<Map.Entry<K, V>>() {
-        override val comparator = Comparator<Map.Entry<K, V>> { first, second -> parent.comparator.compare(first.key, second.key) }
+        override val comparator: Comparator<Map.Entry<K, V>> = Comparator { first, second -> parent.comparator.compare(first.key, second.key) }
         override val size = parent.size
 
         override operator fun contains(element: Map.Entry<K, V>): Boolean = parent.containsKey(element.key) && parent[element.key] == element.value

@@ -20,11 +20,8 @@ import com.probablycoding.persistent.toImmutableSet
 
 abstract class AbstractSet<E> : AbstractCollection<E>(), ImmutableSet<E> {
     override fun addAll(elements: Collection<E>): ImmutableSet<E> = (asSequence() + elements.asSequence()).toImmutableSet()
-
     override fun remove(element: E): ImmutableSet<E> = asSequence().filterNot { it == element }.toImmutableSet()
-
     override fun removeAll(elements: Collection<E>): ImmutableSet<E> = (asSequence() - elements.asSequence()).toImmutableSet()
-
     override fun retainAll(elements: Collection<E>): ImmutableSet<E> = asSequence().filterNot { it in elements }.toImmutableSet()
 
     override fun equals(other: Any?): Boolean {

@@ -20,16 +20,10 @@ import com.probablycoding.persistent.toImmutableList
 
 abstract class AbstractCollection<E> : ImmutableCollection<E> {
     override fun containsAll(elements: Collection<E>): Boolean = elements.all { contains(it) }
-
     override fun isEmpty(): Boolean = size == 0
-
     override fun addAll(elements: Collection<E>): ImmutableCollection<E> = (asSequence() + elements.asSequence()).toImmutableList()
-
     override fun remove(element: E): ImmutableCollection<E> = asSequence().filterNot { it == element }.toImmutableList()
-
     override fun removeAll(elements: Collection<E>): ImmutableCollection<E> = (asSequence() - elements.asSequence()).toImmutableList()
-
     override fun retainAll(elements: Collection<E>): ImmutableCollection<E> = asSequence().filterNot { it in elements }.toImmutableList()
-
     override fun toString(): String = joinToString(", ", "[", "]")
 }

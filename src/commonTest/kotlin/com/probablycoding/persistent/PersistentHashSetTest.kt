@@ -18,5 +18,6 @@ package com.probablycoding.persistent
 import com.probablycoding.persistent.impl.PersistentHashSet
 
 class PersistentHashSetTest : AbstractSetTest() {
-    override fun <E> build(vararg elements: E): ImmutableSet<E> = PersistentHashSet.of(*elements)
+    override fun <E> build(vararg elements: E): ImmutableSet<E> =
+            PersistentHashSet.of(*elements)
 }

@@ -51,11 +51,10 @@ actual object Platform {
     actual fun getProperty(s: String): String? = getenv(s)
     actual fun console(): Boolean = true
 
-    actual fun <T> copyArray(src: Array<T>, srcPos: Int, dest: Array<T?>, destPos: Int, length: Int) {
-        (0..length).forEach {
-            dest[destPos + it] = src[srcPos + it]
-        }
-    }
+    actual fun <T> copyArray(src: Array<T>, srcPos: Int, dest: Array<T?>, destPos: Int, length: Int) =
+            (0 until length).forEach {
+                dest[destPos + it] = src[srcPos + it]
+            }
 }
 
 /**
@@ -118,8 +117,8 @@ actual class Stack<T> actual constructor() : IStack<T> {
     }
 
     override fun pop(): T {
-        val r = s[s.size]
-        s.removeAt(s.size)
+        val r = s[s.size - 1]
+        s.removeAt(s.size - 1)
         return r
     }
 

@@ -15,6 +15,7 @@
  */
 package com.probablycoding.persistent
 
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -104,6 +105,7 @@ abstract class AbstractSetTest {
     }
 
     @Test
+    @Ignore // too slow for now
     fun largeDataSet() {
         var ints = build<Int>()
 

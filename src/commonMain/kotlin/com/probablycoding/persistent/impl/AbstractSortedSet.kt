@@ -20,7 +20,8 @@ import com.probablycoding.persistent.ImmutableSortedSet
 abstract class AbstractSortedSet<E> : AbstractSet<E>(), ImmutableSortedSet<E> {
     abstract val comparator: Comparator<in E>
 
-    override fun addAll(elements: Collection<E>): ImmutableSortedSet<E> = elements.fold(this as ImmutableSortedSet<E>, ImmutableSortedSet<E>::add)
+    override fun addAll(elements: Collection<E>): ImmutableSortedSet<E> =
+            elements.fold(this as ImmutableSortedSet<E>, ImmutableSortedSet<E>::add)
 
     override fun remove(element: E): ImmutableSortedSet<E> {
         var result = clear()

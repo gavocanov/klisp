@@ -33,7 +33,7 @@ enableFeaturePreview('GRADLE_METADATA')
 
 buildCache {
     local(DirectoryBuildCache) {
-        directory = new File(rootDir, 'gradle-build-cache')
+        directory = new File(rootDir, '.cache')
         removeUnusedEntriesAfterDays = 10
     }
 }
