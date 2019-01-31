@@ -225,3 +225,4 @@ fun <O, N> case(matchFunc: (O) -> Boolean,
 
 fun <O, N> wildcard(result: (O) -> N)
         : Case<O, N> = Case({ _ -> true }, result, true)
+

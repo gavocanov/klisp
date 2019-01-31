@@ -13,7 +13,6 @@ import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.ArrayDeque
 import java.util.Stack
-import java.util.TreeSet
 
 val HISTORY = DefaultHistory()
 
@@ -103,12 +102,6 @@ actual class Stack<T> actual constructor() : IStack<T> {
     override fun isNotEmpty(): Boolean = s.isNotEmpty()
 }
 
-actual open class SortedSet<T : Comparable<T>> : TreeSet<T>, Set<T> {
-    actual constructor()
-    actual constructor(from: Collection<T>) : super(from.sorted())
-    actual constructor(from: T) : super(setOf(from).sorted())
-}
-
 actual class FixedPoint actual constructor() : IFixedPoint {
     private var stabilized = ThreadLocal<Boolean>()
     private var running = ThreadLocal<Boolean>()
@@ -140,4 +133,6 @@ actual class FixedPoint actual constructor() : IFixedPoint {
         master.set(null)
     }
 }
+
+
 

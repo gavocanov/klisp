@@ -57,35 +57,10 @@ actual object Platform {
             }
 }
 
-/**
- * Not supported for now in native, throws "mutation attempt of frozen kotlin.collections.HashMap"
- */
 @ThreadLocal
 actual class Memoize<I, O> actual constructor(private val backingMap: MutableMap<I, O>,
                                               private val fn: (I) -> O) : (I) -> O {
     override fun invoke(p1: I): O = fn(p1)
-}
-
-actual open class SortedSet<T : Comparable<T>> : Set<T> {
-    private val lst: List<T>
-
-    actual constructor(from: T) {
-        lst = listOf(from).sorted()
-    }
-
-    actual constructor(from: Collection<T>) {
-        lst = from.sorted()
-    }
-
-    actual constructor() {
-        lst = emptyList()
-    }
-
-    override val size: Int get() = lst.size
-    override fun contains(element: T): Boolean = lst.binarySearch(element) != -1
-    override fun containsAll(elements: Collection<T>): Boolean = elements.all(::contains)
-    override fun isEmpty(): Boolean = lst.isEmpty()
-    override fun iterator(): Iterator<T> = lst.iterator()
 }
 
 actual class Queue<T> actual constructor() : IQueue<T> {

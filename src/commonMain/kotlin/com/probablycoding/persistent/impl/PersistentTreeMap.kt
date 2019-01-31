@@ -101,13 +101,12 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         }
     }
 
-    override fun comparator(): Comparator<in K>? {
-        return if (comparator === PersistentTreeMap.COMPARABLE_COMPARATOR) {
-            null
-        } else {
-            comparator
-        }
-    }
+    override fun comparator(): Comparator<in K>? =
+            if (comparator === PersistentTreeMap.COMPARABLE_COMPARATOR) {
+                null
+            } else {
+                comparator
+            }
 
     override fun firstEntry(): Map.Entry<K, V> {
         var node = root
@@ -135,29 +134,27 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         return com.probablycoding.persistent.impl.Entry(node.key, node.value)
     }
 
-    override fun iterator(): Iterator<Map.Entry<K, V>> {
-        return object : Iterator<Map.Entry<K, V>> {
-            private val stack = Stack<Node<K, V>>()
+    override fun iterator(): Iterator<Map.Entry<K, V>> = object : Iterator<Map.Entry<K, V>> {
+        private val stack = Stack<Node<K, V>>()
 
-            init {
-                push(root)
+        init {
+            push(root)
+        }
+
+        private fun push(root: PersistentTreeMap.Node<K, V>) {
+            var node = root
+            while (node !== PersistentTreeMap.EMPTY_NODE) {
+                stack.push(node)
+                node = node.left
             }
+        }
 
-            private fun push(root: PersistentTreeMap.Node<K, V>) {
-                var node = root
-                while (node !== PersistentTreeMap.EMPTY_NODE) {
-                    stack.push(node)
-                    node = node.left
-                }
-            }
+        override fun hasNext(): Boolean = stack.isNotEmpty()
 
-            override fun hasNext(): Boolean = stack.isNotEmpty()
-
-            override fun next(): Map.Entry<K, V> {
-                val node = stack.pop()
-                push(node.right)
-                return com.probablycoding.persistent.impl.Entry(node.key, node.value)
-            }
+        override fun next(): Map.Entry<K, V> {
+            val node = stack.pop()
+            push(node.right)
+            return com.probablycoding.persistent.impl.Entry(node.key, node.value)
         }
     }
 
@@ -167,12 +164,10 @@ class PersistentTreeMap<K, V> private constructor(override val comparator: Compa
         } else {
             val compare = comparator.compare(key, node.key)
 
-            if (compare < 0) {
-                find(node.left, key)
-            } else if (compare > 0) {
-                find(node.right, key)
-            } else {
-                node
+            when {
+                compare < 0 -> find(node.left, key)
+                compare > 0 -> find(node.right, key)
+                else -> node
             }
         }
     }
