@@ -74,7 +74,7 @@
 
 (fmap fib (range 0 5))
 
-(list (set 1 2 3) true false 1 "aa aa" 'b' 1.0 (map :a 1 :b (list 1 true) :c (set 1 2 2) :d 1.0 :e (map :a 1)))
+(list (set 1 2 3) true false 1 "aa aa" \\b 1.0 (map :a 1 :b (list 1 true) :c (set 1 2 2) :d 1.0 :e (map :a 1)))
 
 (> false true)
 

@@ -21,9 +21,9 @@ class KLispLexer : NBL() {
     // @formatter:off
 
     // Abbreviations:
-    private val ch:     RL = "\\".toRL `~` AnyChar
-    private val id:     RL = (('A' thru 'Z') `||` ('a' thru 'z') `||` ('0' thru '9') `||` oneOf("-+/*_?%$#&^=!@<>:")).`+`
-    private val kw:     RL = ":".toRL `~` id
+    private val ch:     RL = "\\".toRL `~` AnyChar // character
+    private val id:     RL = (('A' thru 'Z') `||` ('a' thru 'z') `||` ('0' thru '9') `||` oneOf("-+/*_?%$#&^=!@<>:")).`+` // identifier
+    private val kw:     RL = ":".toRL `~` id // keyword
     private val ws:     RL = oneOf (" \r\t\n").`+` // whitespace
     private val com:    RL = ";".toRL `~` notOneOf ("\r\n").`*` // single-line comment
 

@@ -3,6 +3,8 @@
  * https://www.youtube.com/watch?v=Txf7swrcLYs&t=661s
  */
 
+@file:Suppress("unused")
+
 package klisp.parser
 
 import klisp.Result
@@ -15,8 +17,8 @@ private operator fun Pair<Int, Int>.plus(that: Pair<Int, Int>): Pair<Int, Int> {
     val (l1, r1) = this
     val (l2, r2) = that
     return when {
-        r1 <= l2 -> Pair<Int, Int>(l1 + l2 - r1, r2)
-        else -> Pair<Int, Int>(l1, r2 + r1 - l2)
+        r1 <= l2 -> Pair(l1 + l2 - r1, r2)
+        else -> Pair(l1, r2 + r1 - l2)
     }
 }
 
@@ -27,9 +29,9 @@ private operator fun Pair<Int, Int>.plus(that: Pair<Int, Int>): Pair<Int, Int> {
 private fun parseBalanced(c: Char, p: Pair<Char, Char>): Pair<Int, Int> {
     require(p.first != p.second) { "first and second can't be the same $p" }
     return when (c) {
-        p.first -> Pair<Int, Int>(0, 1)
-        p.second -> Pair<Int, Int>(1, 0)
-        else -> Pair<Int, Int>(0, 0)
+        p.first -> Pair(0, 1)
+        p.second -> Pair(1, 0)
+        else -> Pair(0, 0)
     }
 }
 
@@ -39,23 +41,23 @@ private fun addBalanceSquare(a: Pair<Int, Int>, c: Char) = addBalance(a, c, '[' 
 private fun addBalanceCurly(a: Pair<Int, Int>, c: Char) = addBalance(a, c, '[' to ']')
 
 fun String.hasBalancedRoundBrackets(): Result<Pair<Int, Int>> {
-    val res = this.fold(Pair<Int, Int>(0, 0), ::addBalanceRound)
-    return (res == Pair<Int, Int>(0, 0)) to res
+    val res = this.fold(Pair(0, 0), ::addBalanceRound)
+    return (res == Pair(0, 0)) to res
 }
 
 fun String.hasBalancedSquareBrackets(): Result<Pair<Int, Int>> {
-    val res = this.fold(Pair<Int, Int>(0, 0), ::addBalanceSquare)
-    return (res == Pair<Int, Int>(0, 0)) to res
+    val res = this.fold(Pair(0, 0), ::addBalanceSquare)
+    return (res == Pair(0, 0)) to res
 }
 
 fun String.hasBalancedCurlyBrackets(): Result<Pair<Int, Int>> {
-    val res = this.fold(Pair<Int, Int>(0, 0), ::addBalanceCurly)
-    return (res == Pair<Int, Int>(0, 0)) to res
+    val res = this.fold(Pair(0, 0), ::addBalanceCurly)
+    return (res == Pair(0, 0)) to res
 }
 
 fun String.hasBalancedPairOf(p: Pair<Char, Char>): Result<Pair<Int, Int>> {
-    val res = this.fold(Pair<Int, Int>(0, 0)) { a, n -> addBalance(a, n, p) }
-    return (res == Pair<Int, Int>(0, 0)) to res
+    val res = this.fold(Pair(0, 0)) { a, n -> addBalance(a, n, p) }
+    return (res == Pair(0, 0)) to res
 }
 
 inline val Result<Pair<Int, Int>>.left: Int get() = this.data.second
