@@ -1,4 +1,4 @@
-package klisp.tty
+package tty
 
 private const val ESC = "\u001B"
 internal const val CSI = "$ESC["

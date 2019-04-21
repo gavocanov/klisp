@@ -2,8 +2,7 @@
 
 package klisp
 
-import klisp.expected.Platform
-import klisp.tty.TermColors
+import tty.TermColors
 
 fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
 
@@ -222,4 +221,4 @@ fun <O, N> case(matchFunc: (O) -> Boolean,
         : Case<O, N> = Case(matchFunc, result)
 
 fun <O, N> wildcard(result: (O) -> N)
-        : Case<O, N> = Case({ _ -> true }, result, true)
+        : Case<O, N> = Case({ true }, result, true)

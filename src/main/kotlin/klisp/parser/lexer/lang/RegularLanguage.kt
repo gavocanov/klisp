@@ -28,7 +28,7 @@
 
 package klisp.parser.lexer.lang
 
-import klisp.expected.Memoize
+import klisp.Memoize
 
 /**
  * A regular language is the set of strings constructed from union,

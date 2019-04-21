@@ -5,7 +5,7 @@
 
 package klisp.parser.lexer
 
-import klisp.expected.Queue
+import klisp.Queue
 import klisp.cons
 
 /**

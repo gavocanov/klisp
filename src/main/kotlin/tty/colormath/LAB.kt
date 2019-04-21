@@ -1,4 +1,4 @@
-package klisp.tty.colormath
+package tty.colormath
 
 import kotlin.math.pow
 

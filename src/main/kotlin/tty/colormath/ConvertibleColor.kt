@@ -1,4 +1,4 @@
-package klisp.tty.colormath
+package tty.colormath
 
 /**
  * A color that can be converted to other representations.

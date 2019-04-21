@@ -1,4 +1,9 @@
-package klisp.tty.colormath
+package tty.colormath
+
+import tty.colormath.ConvertibleColor
+import tty.colormath.HSV
+import tty.colormath.RGB
+import tty.colormath.roundToInt
 
 data class HSL(val h: Int, val s: Int, val l: Int) : ConvertibleColor {
     init {

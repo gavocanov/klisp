@@ -8,6 +8,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.30'
     id 'kotlinx-serialization' version '1.3.30'
     id 'com.peterabeles.gversion' version '1.4.0'
+    id 'com.github.johnrengelman.shadow' version '5.0.0'
     id 'application'
 }
 
@@ -16,6 +17,10 @@ repositories {
     mavenCentral()
     maven { url "https://kotlin.bintray.com/kotlinx" }
 }
+
+group = 'org.cth.klisp'
+version = '0.0.1'
+mainClassName = 'klisp.KlispKt'
 
 dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
@@ -29,13 +34,11 @@ dependencies {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     dependsOn(createVersionFile)
-
     kotlinOptions {
         jvmTarget = "11"
         apiVersion = "1.3"
         languageVersion = "1.3"
         javaParameters = true
-        freeCompilerArgs = ['-Xuse-experimental=kotlin.Experimental']
     }
 }
 
@@ -49,4 +52,9 @@ gversion {
     language = "kotlin"
 }
 
-mainClassName = 'klisp.AppKt'
+shadowJar {
+    baseName = 'klisp'
+    classifier = null
+    version = null
+    minimize()
+}

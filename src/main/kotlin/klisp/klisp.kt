@@ -2,7 +2,6 @@
 
 package klisp
 
-import klisp.expected.Platform
 import klisp.parser.derivativeParse
 
 var PROFILE = false
@@ -10,7 +9,7 @@ var DEBUG = false
 const val HISTORY_FILE_NAME = ".kl_history"
 
 fun main() {
-    LOGGER.info("$MAVEN_GROUP-${Platform.platformId()} v$VERSION-$GIT_REVISION (git:$GIT_SHA), compiled on $BUILD_DATE")
+    LOGGER.info("klisp-${Platform.platformId()} v$VERSION-$GIT_REVISION (git:$GIT_SHA), compiled on $BUILD_DATE")
 
     val historyFileName = Platform.getHistoryFileName()
     val historyLoaded = Platform.loadHistory(historyFileName)

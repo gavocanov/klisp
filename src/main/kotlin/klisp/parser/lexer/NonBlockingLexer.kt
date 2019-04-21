@@ -5,17 +5,8 @@
 
 package klisp.parser.lexer
 
-import klisp.cons
-import klisp.exIfNull
-import klisp.first
-import klisp.last
-import klisp.parser.lexer.lang.Catenation
-import klisp.parser.lexer.lang.CharSet
-import klisp.parser.lexer.lang.Character
-import klisp.parser.lexer.lang.RegularLanguage
-import klisp.parser.lexer.lang.ε
-import klisp.rest
-import klisp.reversed
+import klisp.*
+import klisp.parser.lexer.lang.*
 
 /**
  * A non-blocking lexer consumes a live stream of characters (or objects

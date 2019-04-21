@@ -1,4 +1,4 @@
-package klisp.tty.colormath
+package tty.colormath
 
 data class Ansi16(val code: Int) : ConvertibleColor {
     init {

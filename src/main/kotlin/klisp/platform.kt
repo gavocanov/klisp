@@ -1,8 +1,5 @@
-package klisp.expected
+package klisp
 
-import klisp.ExitException
-import klisp.HISTORY_FILE_NAME
-import klisp.LOGGER
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
@@ -68,17 +65,12 @@ class Memoize<I, O> constructor(private val backingMap: MutableMap<I, O>,
     override fun invoke(i: I): O = backingMap.getOrPut(i) { fn(i) }
 }
 
-class Queue<T> : IQueue<T> {
+class Queue<T> {
     private val q = ArrayDeque<T>()
-    override val isEmpty: Boolean
-        get() = q.isEmpty()
 
-    override fun dequeue(): T =
-            q.pop()
+    val isEmpty: Boolean get() = q.isEmpty()
 
-    override fun plusAssign(items: Iterable<T>): Unit =
-            q.plusAssign(items)
-
-    override fun plusAssign(a: T): Unit =
-            q.plusAssign(a)
+    fun dequeue(): T = q.pop()
+    operator fun plusAssign(items: Iterable<T>): Unit = q.plusAssign(items)
+    operator fun plusAssign(a: T): Unit = q.plusAssign(a)
 }

@@ -1,4 +1,4 @@
-@file:Suppress("EXPERIMENTAL_API_USAGE")
+@file:Suppress("EXPERIMENTAL_API_USAGE", "TestFunctionName", "unused")
 
 import klisp.bool
 import klisp.eval
@@ -11,7 +11,6 @@ import klisp.parser.lexer.LiveStream
 import klisp.parser.lexer.tokens.DecToken
 import klisp.parser.lexer.tokens.IntToken
 import klisp.parser.lexer.tokens.Token
-import kotlinx.serialization.UnstableDefault
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

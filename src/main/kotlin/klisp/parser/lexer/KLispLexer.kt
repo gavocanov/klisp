@@ -4,24 +4,15 @@
 
 package klisp.parser.lexer
 
-import klisp.expected.Platform
+import klisp.Platform
 import klisp.parser.lexer.lang.AnyChar
 import klisp.parser.lexer.lang.END
 import klisp.parser.lexer.lang.RegularLanguage.Companion.notOneOf
 import klisp.parser.lexer.lang.RegularLanguage.Companion.oneOf
-import klisp.parser.lexer.tokens.BooleanToken
-import klisp.parser.lexer.tokens.CharToken
-import klisp.parser.lexer.tokens.CloseBraceToken
-import klisp.parser.lexer.tokens.DecToken
-import klisp.parser.lexer.tokens.IntToken
-import klisp.parser.lexer.tokens.KeywordToken
-import klisp.parser.lexer.tokens.OpenBraceToken
-import klisp.parser.lexer.tokens.StringToken
-import klisp.parser.lexer.tokens.SymbolToken
+import klisp.parser.lexer.tokens.*
 import klisp.reversed
 import klisp.singletonList
 import klisp.took
-import kotlin.jvm.JvmStatic
 
 /**
  * KLispLexer: A lexer for the programming language KLisp

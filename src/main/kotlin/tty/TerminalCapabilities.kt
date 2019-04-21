@@ -1,10 +1,10 @@
-package klisp.tty
+package tty
 
-import klisp.expected.Platform
-import klisp.tty.TermColors.Level.ANSI16
-import klisp.tty.TermColors.Level.ANSI256
-import klisp.tty.TermColors.Level.NONE
-import klisp.tty.TermColors.Level.TRUECOLOR
+import klisp.Platform
+import tty.TermColors.Level.ANSI16
+import tty.TermColors.Level.ANSI256
+import tty.TermColors.Level.NONE
+import tty.TermColors.Level.TRUECOLOR
 
 object TerminalCapabilities {
     /**

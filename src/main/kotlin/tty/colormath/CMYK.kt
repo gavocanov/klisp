@@ -1,4 +1,4 @@
-package klisp.tty.colormath
+package tty.colormath
 
 data class CMYK(val c: Int, val m: Int, val y: Int, val k: Int) : ConvertibleColor {
     init {

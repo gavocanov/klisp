@@ -1,14 +1,14 @@
-package klisp.tty
+package tty
 
-import klisp.tty.colormath.Ansi16
-import klisp.tty.colormath.Ansi256
-import klisp.tty.colormath.CMYK
-import klisp.tty.colormath.ConvertibleColor
-import klisp.tty.colormath.HSL
-import klisp.tty.colormath.HSV
-import klisp.tty.colormath.LAB
-import klisp.tty.colormath.RGB
-import klisp.tty.colormath.XYZ
+import tty.colormath.Ansi16
+import tty.colormath.Ansi256
+import tty.colormath.CMYK
+import tty.colormath.ConvertibleColor
+import tty.colormath.HSL
+import tty.colormath.HSV
+import tty.colormath.LAB
+import tty.colormath.RGB
+import tty.colormath.XYZ
 import kotlin.math.abs
 import kotlin.math.round
 
