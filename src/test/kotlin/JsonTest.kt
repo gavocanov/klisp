@@ -1,22 +1,11 @@
-import klisp.byte
-import klisp.char
-import klisp.double
-import klisp.float
-import klisp.int
-import klisp.keyword
-import klisp.long
-import klisp.short
-import klisp.string
-import klisp.ubyte
-import klisp.uint
-import klisp.ulong
-import klisp.ushort
+@file:Suppress("EXPERIMENTAL_UNSIGNED_LITERALS", "EXPERIMENTAL_API_USAGE")
+
+import klisp.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.list
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 
-@ExperimentalUnsignedTypes
 class JsonTest {
     @Test
     fun `atoms to json`() {

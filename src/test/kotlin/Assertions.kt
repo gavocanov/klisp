@@ -1,3 +1,5 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE")
+
 import klisp.bool
 import klisp.eval
 import klisp.exp
@@ -9,34 +11,27 @@ import klisp.parser.lexer.LiveStream
 import klisp.parser.lexer.tokens.DecToken
 import klisp.parser.lexer.tokens.IntToken
 import klisp.parser.lexer.tokens.Token
+import kotlinx.serialization.UnstableDefault
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 
-@ExperimentalUnsignedTypes
 fun _eval(s: String): exp = eval(derivativeParse(s))
 //        .also { println("$s -> $it") }
 
-@ExperimentalUnsignedTypes
 private fun _eq(s: String, exp: exp) = assertEquals(exp, _eval(s), s)
 
-@ExperimentalUnsignedTypes
 infix fun String.eq(exp: exp) = _eq(this, exp)
 
-@ExperimentalUnsignedTypes
 infix fun String.shouldEvalTo(exp: exp) = _eq(this, exp)
 
-@ExperimentalUnsignedTypes
 infix fun String.shouldEvalTo(b: Boolean) = _eq(this, bool(b))
 
-@ExperimentalUnsignedTypes
 infix fun String.shouldBe(b: Boolean) = _eq(this, bool(b) as exp)
 
-@ExperimentalUnsignedTypes
 infix fun String.shouldNotBe(b: Boolean) = assertNotEquals(b, (_eval(this) as bool).value, this)
 
-@ExperimentalUnsignedTypes
 infix fun String.shouldBeA(clazz: KClass<*>) = assertEquals(clazz, _eval(this)::class, this)
 
 private fun lex(s: String): List<Token> {
@@ -52,7 +47,6 @@ private fun lexSingle(s: String): Token {
     return l.output.head
 }
 
-@ExperimentalUnsignedTypes
 infix fun String.shouldLexTo(token: Token) {
     val actual = lexSingle(this)
     assertEquals(token.toString(), actual.toString())

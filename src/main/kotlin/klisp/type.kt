@@ -1,4 +1,4 @@
-@file:Suppress("ClassName")
+@file:Suppress("ClassName", "EXPERIMENTAL_API_USAGE")
 
 package klisp
 
@@ -37,7 +37,7 @@ enum class specialForm(val aliases: List<String>? = null) {
 
     companion object {
         private val aliases = values().mapNotNull { it.aliases }.flatten()
-        private val values = specialForm.values().map { it.name.toLowerCase() }
+        private val values = values().map { it.name.toLowerCase() }
         fun isSpecial(s: String): Boolean = (values + aliases).any { it == s }
         fun isSpecial(s: symbol): Boolean = isSpecial(s.value)
         fun from(s: String): specialForm {
@@ -45,14 +45,13 @@ enum class specialForm(val aliases: List<String>? = null) {
                 if (v.aliases?.contains(s) == true)
                     return v
             }
-            return specialForm.valueOf(s.toUpperCase())
+            return valueOf(s.toUpperCase())
         }
 
-        fun fromSymbol(s: symbol): specialForm = specialForm.from(s.value)
+        fun fromSymbol(s: symbol): specialForm = from(s.value)
     }
 }
 
-@ExperimentalUnsignedTypes
 enum class type(val constructor: ((s: String) -> exp)? = null,
                 val isNumber: Boolean = true) {
     _bool({ bool.from(it) }),
@@ -140,7 +139,6 @@ sealed class decimal<T : Number>(private val decimalValue: T) : number<T>(decima
     override fun toString(): String = ":decimal(${decimalValue::class.simpleName}) $decimalValue"
 }
 
-@ExperimentalUnsignedTypes
 sealed class collection(protected open val value: Collection<exp>) : atom, serializable, Collection<exp> by value {
     override fun toJson(): String = "[${value.joinToString(",", transform = exp::toJson)}]"
     override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseStringAtom(it) } as atom
@@ -148,7 +146,6 @@ sealed class collection(protected open val value: Collection<exp>) : atom, seria
     override fun toString(): String = ":collection $value"
 }
 
-@ExperimentalUnsignedTypes
 data class list(override val value: exps) : collection(value), exps by value {
     override val size: Int = value.size
     override fun contains(element: exp): Boolean = value.contains(element)
@@ -159,7 +156,6 @@ data class list(override val value: exps) : collection(value), exps by value {
     override operator fun get(index: Int): exp = value[index]
 }
 
-@ExperimentalUnsignedTypes
 data class set(override val value: Set<exp>) : collection(value), Set<exp> by value {
     override val size: Int = value.size
     override fun contains(element: exp): Boolean = value.contains(element)
@@ -296,7 +292,6 @@ data class float(val value: Float) : decimal<Float>(value) {
     override fun toString(): String = ":float $value"
 }
 
-@ExperimentalUnsignedTypes
 data class double(val value: Double) : decimal<Double>(value) {
     companion object {
         fun from(s: String): exp = tryOrNil {
@@ -305,8 +300,8 @@ data class double(val value: Double) : decimal<Double>(value) {
             else nil
         }
 
-        fun from(num: Number) = double.from("$num")
-        fun from(num: ULong) = double.from("$num")
+        fun from(num: Number) = from("$num")
+        fun from(num: ULong) = from("$num")
     }
 
     override fun toJson(): String = Json.stringify(Double.serializer(), value)
@@ -314,7 +309,6 @@ data class double(val value: Double) : decimal<Double>(value) {
     override fun toString(): String = ":double $value"
 }
 
-@ExperimentalUnsignedTypes
 data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
     companion object {
         fun from(s: String): exp = tryOrNil { ubyte(s.toUByte()) }
@@ -325,7 +319,6 @@ data class ubyte(val value: UByte) : integer<Short>(value.toShort()) {
     override fun toString(): String = ":ubyte $value"
 }
 
-@ExperimentalUnsignedTypes
 data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
     companion object {
         fun from(s: String): exp = tryOrNil { ushort(s.toUShort()) }
@@ -336,7 +329,6 @@ data class ushort(val value: UShort) : integer<Int>(value.toInt()) {
     override fun toString(): String = ":ushort $value"
 }
 
-@ExperimentalUnsignedTypes
 data class uint(val value: UInt) : integer<Long>(value.toLong()) {
     companion object {
         fun from(s: String): exp = tryOrNil { uint(s.toUInt()) }
@@ -347,7 +339,6 @@ data class uint(val value: UInt) : integer<Long>(value.toLong()) {
     override fun toString(): String = ":uint $value"
 }
 
-@ExperimentalUnsignedTypes
 data class ulong(val value: ULong) : decimal<Double>(value.toString().toDouble()) {
     companion object {
         fun from(s: String): exp = tryOrNil { ulong(s.toULong()) }

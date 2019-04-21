@@ -1,11 +1,9 @@
-@file:Suppress("unused")
+@file:Suppress("EXPERIMENTAL_API_USAGE", "unused")
 
 package klisp
 
 import klisp.expected.Platform
 import klisp.tty.TermColors
-import kotlin.jvm.JvmStatic
-import kotlin.jvm.JvmSynthetic
 
 fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
 

@@ -1,30 +1,12 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE")
+
 package klisp.parser
 
-import klisp._list
-import klisp.atom
-import klisp.bool
-import klisp.char
-import klisp.exp
-import klisp.head
-import klisp.keyword
-import klisp.nil
-import klisp.nok
+import klisp.*
 import klisp.parser.lexer.KLispLexer
 import klisp.parser.lexer.LiveStream
-import klisp.parser.lexer.tokens.BooleanToken
-import klisp.parser.lexer.tokens.CharToken
-import klisp.parser.lexer.tokens.CloseBraceToken
-import klisp.parser.lexer.tokens.KeywordToken
-import klisp.parser.lexer.tokens.OpenBraceToken
-import klisp.parser.lexer.tokens.StringToken
-import klisp.parser.lexer.tokens.SymbolToken
-import klisp.parser.lexer.tokens.Token
-import klisp.string
-import klisp.symbol
-import klisp.type
-import klisp.unit
+import klisp.parser.lexer.tokens.*
 
-@ExperimentalUnsignedTypes
 fun derivativeParse(s: String): exp {
     val balance = s.hasBalancedRoundBrackets()
     if (balance.nok)
@@ -35,7 +17,6 @@ fun derivativeParse(s: String): exp {
     return readFromTokens(lexer.output.toList)
 }
 
-@ExperimentalUnsignedTypes
 fun readFromTokens(tokens: MutableList<Token>): exp {
     if (tokens.isEmpty()) return unit
     val token = tokens.head
@@ -57,7 +38,6 @@ fun readFromTokens(tokens: MutableList<Token>): exp {
     }
 }
 
-@ExperimentalUnsignedTypes
 fun parseTokenAtom(t: Token): atom = when (t) {
     is KeywordToken -> keyword(t.value)
     is StringToken -> string("\"${t.value}\"")
@@ -81,7 +61,6 @@ fun parseTokenAtom(t: Token): atom = when (t) {
     }
 }
 
-@ExperimentalUnsignedTypes
 fun parseStringAtom(s: String): atom = when {
     s.startsWith(':') -> keyword(s)
     s.startsWith('"') && s.endsWith('"') -> string(s)

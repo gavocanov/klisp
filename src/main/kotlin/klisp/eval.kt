@@ -1,6 +1,7 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE")
+
 package klisp
 
-@ExperimentalUnsignedTypes
 fun eval(x: exp, env: env = stdEnv): exp {
     if (DEBUG) LOGGER.debug(":eval <$x>")
     return when {
@@ -50,8 +51,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
                 }
                 specialForm.IF -> {
                     val (_, test: exp, conseq, alt) = x
-                    val res = eval(test, env)
-                    val exp = when (res) {
+                    val exp = when (val res = eval(test, env)) {
                         is bool -> res
                         is collection -> bool(res.isNotEmpty())
                         is number<*> -> bool(res.asDouble > 0.0)

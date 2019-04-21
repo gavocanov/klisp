@@ -1,3 +1,5 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE", "EXPERIMENTAL_UNSIGNED_LITERALS")
+
 package klisp
 
 import klisp.parser.lexer.KLispLexer
@@ -7,10 +9,10 @@ import kotlin.math.pow
 
 fun begin(args: exps): exp = args.last()
 
-@ExperimentalUnsignedTypes
 fun foldableMathOp(op: mathOp, args: exps): exp {
     require(args.isNotEmpty()) { "$op expects at least 1 argument" }
-    val res = when {
+
+    return when (val res = when {
         args.all { it is integer<*> } && args.any { (it as integer<*>).asLong == Long.MAX_VALUE } -> {
             when (op) {
                 mathOp.plus -> ulong(args.fold(0UL) { a, n -> a + (n as integer<*>).numericValue.toString().toULong() })
@@ -89,9 +91,7 @@ fun foldableMathOp(op: mathOp, args: exps): exp {
         }
         else ->
             throw IllegalArgumentException("$op for arguments of type <${args.map { it::class.simpleName }.joinToString(", ")}> is not supported")
-    }
-
-    return when (res) {
+    }) {
         is long -> if (res.value == Long.MAX_VALUE || res.value == Long.MIN_VALUE) throw IllegalStateException("under/overflow res <$res>, args <$args>, op <$op>") else res
         is ulong -> if (res.value == ULong.MAX_VALUE || res.value == ULong.MIN_VALUE) throw IllegalStateException("under/overflow res <$res>, args <$args>, op <$op>") else res
         is double -> if (res.value == Double.POSITIVE_INFINITY || res.value == Double.NEGATIVE_INFINITY) throw IllegalStateException("under/overflow res <$res>, args <$args>, op <$op>") else res
@@ -115,7 +115,6 @@ fun compare(op: compareOp, args: exps): Boolean {
     }
 }
 
-@ExperimentalUnsignedTypes
 fun isa(t: type, args: exps): exp {
     require(args.size == 1) { "$t? should have 1 argument, got ${args.size}" }
     val value = args.first()
@@ -165,7 +164,6 @@ fun eq(args: exps): exp {
     return bool(f == s)
 }
 
-@ExperimentalUnsignedTypes
 fun range(args: exps): collection {
     require(args.size == 2) { "range requires 2 arguments, got ${args.size}" }
     require(args.all { it is integer<*> }) { "range requires 2 integer arguments" }
@@ -175,11 +173,8 @@ fun range(args: exps): collection {
     return list((f.asLong..l.asLong).map(::long))
 }
 
-@Suppress("USELESS_CAST") // needed for native target
-@ExperimentalUnsignedTypes
 fun lam(argNames: exp, body: exp, env: env): exp {
     require(argNames is _list) { "arguments should be a list" }
-    argNames as _list
     require(argNames.all { it is symbol }) { "argument names should all be valid symbols" }
     require(body is _list) { "body should be a list" }
     val _argNames = argNames.map { it as symbol }
@@ -190,11 +185,8 @@ fun lam(argNames: exp, body: exp, env: env): exp {
     }
 }
 
-@ExperimentalUnsignedTypes
-@Suppress("USELESS_CAST") // needed for native target
 fun fmap(exp: exp, list: exp): exp {
     require(list is collection) { "second argument should be a collection" }
-    list as collection
     return when (exp) {
         is func -> list(list.map { exp(listOf(it)) })
         is atom -> list(list.map { exp })
@@ -202,13 +194,11 @@ fun fmap(exp: exp, list: exp): exp {
     }
 }
 
-@ExperimentalUnsignedTypes
 fun set(it: exps): exp = when {
     it.first() is list -> set((it.first() as list).toSet())
     else -> set(it.toSet())
 }
 
-@ExperimentalUnsignedTypes
 fun lex(args: exps): string {
     require(args.size == 1) { "lex should have 1 argument, got ${args.size}" }
     require(args[0] is string) { "argument should be a string" }
@@ -226,7 +216,6 @@ fun json(args: exps): string {
     return string(map.toJson())
 }
 
-@ExperimentalUnsignedTypes
 fun map(it: exps): exp {
     val keys = it.filter { it is keyword }.map { it as keyword }
     val vals = it.filter { it !is keyword }
@@ -234,11 +223,8 @@ fun map(it: exps): exp {
     return map(value = keys.zip(vals).toMap())
 }
 
-@ExperimentalUnsignedTypes
-@Suppress("USELESS_CAST") // needed for native target
 fun filter(exp: exp, list: exp): exp {
     require(list is collection) { "second argument should be a collection" }
-    list as collection
     return when (exp) {
         is func -> list(list.filter {
             (exp(listOf(it)) as bool).value
@@ -247,14 +233,11 @@ fun filter(exp: exp, list: exp): exp {
     }
 }
 
-@ExperimentalUnsignedTypes
-@Suppress("USELESS_CAST") // needed for native target
 fun reduce(id: exp, exp: exp, list: exp): exp {
     require(list is collection) { "third argument should be a collection" }
-    list as collection
     return when (exp) {
         is func -> list.fold(id) { a, n ->
-            (exp(listOf(a, n))) as exp
+            (exp(listOf(a, n)))
         }
         else -> throw IllegalStateException("this should not be...")
     }

@@ -1,3 +1,5 @@
+@file:Suppress("EXPERIMENTAL_API_USAGE")
+
 package klisp
 
 import klisp.expected.Platform
@@ -7,8 +9,7 @@ var PROFILE = false
 var DEBUG = false
 const val HISTORY_FILE_NAME = ".kl_history"
 
-@ExperimentalUnsignedTypes
-fun main(args: Array<String>) {
+fun main() {
     LOGGER.info("$MAVEN_GROUP-${Platform.platformId()} v$VERSION-$GIT_REVISION (git:$GIT_SHA), compiled on $BUILD_DATE")
 
     val historyFileName = Platform.getHistoryFileName()
@@ -40,7 +41,7 @@ fun main(args: Array<String>) {
                     LOGGER.trace(":eval $evalTook")
                 }
 
-                Platform.saveToHistory(line, historyFileName, historyLoaded)
+                Platform.saveToHistory(line, historyLoaded)
                 r
             } catch (t: Throwable) {
                 err(t.message ?: t::class.simpleName)
