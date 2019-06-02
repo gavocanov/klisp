@@ -5,15 +5,23 @@ import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
 import org.jline.reader.impl.history.DefaultHistory
+import org.jline.terminal.Terminal
+import org.jline.terminal.TerminalBuilder
 import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.*
 
 val HISTORY = DefaultHistory()
 
+val TERMINAL: Terminal = TerminalBuilder.builder()
+        .system(true)
+        .jansi(true)
+        .build()
+
 val READER: LineReader = LineReaderBuilder.builder()
         .variable(LineReader.HISTORY_FILE, Platform.getHistoryFileName())
         .history(HISTORY)
+        .terminal(TERMINAL)
         .build()
 
 object Platform {
