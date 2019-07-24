@@ -29,8 +29,10 @@ fun main(args: Array<String>) {
     )
 
     val opts = Options.compile(usage).parse(args)
-    if (opts.isSet("help"))
-        throw Options.HelpException(opts.usage());
+    if (opts.isSet("help")) {
+        LOGGER.info(opts.usage())
+        System.exit(0)
+    }
     when {
         opts.isSet("daemon") -> ssh(opts)
         else -> repl()

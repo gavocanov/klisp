@@ -8,4 +8,4 @@ gradle-build-cache/
 gradlew*
 hotspot*
 *.iml
-
+version.kt
