@@ -116,39 +116,39 @@ fun compare(op: compareOp, args: exps): Boolean {
 }
 
 fun isa(t: type, args: exps): exp {
-    require(args.size == 1) { "$t? should have 1 argument, got ${args.size}" }
+    require(args.size == 1) { "${t.toString().tail}? should have 1 argument, got ${args.size}" }
     val value = args.first()
     return bool(
-            try {
-                when (t) {
-                    type._byte -> value as byte
-                    type._short -> value as short
-                    type._int -> value as int
-                    type._long -> value as long
-                    type._float -> value as float
-                    type._double -> value as double
-                    type._char -> value as char
-                    type._string -> value as string
-                    type._bool -> value as bool
-                    type._keyword -> value as keyword
-                    type._list -> value as list
-                    type._set -> value as set
-                    type._map -> value as map
-                    type._collection -> value as collection
-                    type._number -> value as number<*>
-                    type._integer -> value as integer<*>
-                    type._decimal -> value as decimal<*>
-                    type._symbol -> value as symbol
-                    type._atom -> value as atom
-                    type._ubyte -> value as ubyte
-                    type._ushort -> value as ushort
-                    type._uint -> value as uint
-                    type._ulong -> value as ulong
-                }
-                true
-            } catch (_: Throwable) {
-                false
+        try {
+            when (t) {
+                type._byte -> value as byte
+                type._short -> value as short
+                type._int -> value as int
+                type._long -> value as long
+                type._float -> value as float
+                type._double -> value as double
+                type._char -> value as char
+                type._string -> value as string
+                type._bool -> value as bool
+                type._keyword -> value as keyword
+                type._list -> value as list
+                type._set -> value as set
+                type._map -> value as map
+                type._collection -> value as collection
+                type._number -> value as number<*>
+                type._integer -> value as integer<*>
+                type._decimal -> value as decimal<*>
+                type._symbol -> value as symbol
+                type._atom -> value as atom
+                type._ubyte -> value as ubyte
+                type._ushort -> value as ushort
+                type._uint -> value as uint
+                type._ulong -> value as ulong
             }
+            true
+        } catch (_: Throwable) {
+            false
+        }
     )
 }
 
@@ -217,7 +217,7 @@ fun json(args: exps): string {
 }
 
 fun map(it: exps): exp {
-    val keys = it.filter { it is keyword }.map { it as keyword }
+    val keys = it.filterIsInstance<keyword>()
     val vals = it.filter { it !is keyword }
     require(vals.size == keys.size) { "invalid k/v count <k:${keys.size}, v:${vals.size}>" }
     return map(value = keys.zip(vals).toMap())

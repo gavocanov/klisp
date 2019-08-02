@@ -80,10 +80,12 @@ enum class type(val constructor: ((s: String) -> exp)? = null,
 
 interface exp : serializable {
     var meta: exp?
+    val docs: String?
 }
 
 interface atom : exp {
     override var meta: exp?
+    override val docs: String
 }
 
 interface serializable {
@@ -92,6 +94,7 @@ interface serializable {
 }
 
 data class err(val msg: String?) : atom, serializable {
+    override val docs: String = "error"
     override fun toJson(): String = Json.stringify(String.serializer(), msg ?: "no message")
     override fun fromJson(s: String): err = err(s)
     override var meta: exp? = null
@@ -99,6 +102,7 @@ data class err(val msg: String?) : atom, serializable {
 }
 
 object nil : atom, serializable {
+    override val docs: String = "nil"
     override fun toJson(): String = Json.stringify(String.serializer(), "nil")
     override fun fromJson(s: String): nil = this
     override var meta: exp? = null
@@ -106,6 +110,7 @@ object nil : atom, serializable {
 }
 
 object unit : atom {
+    override val docs: String = "unit"
     override fun toJson(): String = Json.stringify(String.serializer(), "unit")
     override fun fromJson(s: String): atom = this
     override var meta: exp? = null
@@ -113,6 +118,7 @@ object unit : atom {
 }
 
 data class _list(private val value: exps) : exp, exps by value {
+    override val docs: String = "internal list"
     override fun toJson(): String = throw NotImplementedError("_list is internal, this should not happen")
     override fun fromJson(s: String): atom = throw NotImplementedError("_list is internal, this should not happen")
     override var meta: exp? = null
@@ -120,25 +126,30 @@ data class _list(private val value: exps) : exp, exps by value {
 }
 
 sealed class scalar : atom, serializable {
+    override val docs: String = "value of type <${this::class.simpleName ?: "unknown"}>"
     override var meta: exp? = null
 }
 
 sealed class number<out T : Number>(val numericValue: T) : scalar(), serializable {
+    override val docs: String = "number"
     open val asDouble: Double by lazy { numericValue.toDouble() }
     override fun toString(): String = ":number(${numericValue::class.simpleName}) $numericValue"
 }
 
 sealed class integer<T : Number>(val integerValue: T) : number<T>(integerValue) {
+    override val docs: String = "integer ${super.docs}"
     val asLong: Long by lazy { integerValue.toLong() }
     override fun toString(): String = ":integer(${integerValue::class.simpleName}) $integerValue"
 }
 
 sealed class decimal<T : Number>(private val decimalValue: T) : number<T>(decimalValue) {
+    override val docs: String = "decimal ${super.docs}"
     override val asDouble: Double by lazy { decimalValue.toDouble() }
     override fun toString(): String = ":decimal(${decimalValue::class.simpleName}) $decimalValue"
 }
 
 sealed class collection(protected open val value: Collection<exp>) : atom, serializable, Collection<exp> by value {
+    override val docs: String = "collection of type <${this::class.simpleName ?: "unknown"}>"
     override fun toJson(): String = "[${value.joinToString(",", transform = exp::toJson)}]"
     override fun fromJson(s: String): atom = s.drop(1).dropLast(1).split(",").map { parseStringAtom(it) } as atom
     override var meta: exp? = null
@@ -166,6 +177,7 @@ data class set(override val value: Set<exp>) : collection(value), Set<exp> by va
 }
 
 data class map(private val value: kmap) : atom, kmap by value, serializable {
+    override val docs: String = "map"
     override fun toJson(): String = "{${value.map { (k, v) -> "${k.toJson()}:${v.toJson()}" }.joinToString(",")}}"
     override fun fromJson(s: String): map = throw NotImplementedError()
     override var meta: exp? = null
@@ -177,6 +189,7 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
         private fun parseMeta(m: exp?) = if (m !== null && DEBUG) "<$m>" else ""
     }
 
+    override val docs: String = "function"
     override fun toJson(): String = throw IllegalStateException("can't serialize a function")
     override fun fromJson(s: String): atom = throw IllegalStateException("can't deserialize a function")
     override var meta: exp? = null
@@ -195,12 +208,14 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
 }
 
 data class char(val value: Char) : scalar() {
+    override val docs: String = "character"
     override fun toJson(): String = Json.stringify(String.serializer(), value.toString())
     override fun fromJson(s: String): atom = char(s.first())
     override fun toString(): String = ":char $value"
 }
 
 data class string(val value: String) : scalar() {
+    override val docs: String = "string"
     override fun toJson(): String = Json.stringify(String.serializer(), value)
     override fun fromJson(s: String): atom = string(s)
     override fun toString(): String = ":string $value"
@@ -213,6 +228,7 @@ data class symbol(val value: String) : scalar() {
 }
 
 data class keyword(val value: String) : atom, serializable {
+    override val docs: String = "keyword"
     override fun toJson(): String = Json.stringify(String.serializer(), value.substringAfter(':'))
     override fun fromJson(s: String): keyword = keyword(":$s")
     override var meta: exp? = null
@@ -228,6 +244,7 @@ data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {
         }
     }
 
+    override val docs: String = "boolean"
     override fun toJson(): String = Json.stringify(Boolean.serializer(), value)
     override fun fromJson(s: String): atom = bool(s.toBoolean())
     override fun toString(): String = ":bool $value"

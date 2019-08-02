@@ -49,28 +49,34 @@ fun repl() {
         }
 
         if (line !== null) {
-            val res = try {
-                var _start = if (PROFILE) Platform.getTimeNanos() else 0
-                val parsed = derivativeParse(line)
-                val parseTook = took(_start)
+            if (!line.isBlank()) {
+                val res = try {
+                    var _start = if (PROFILE) Platform.getTimeNanos() else 0
+                    val parsed = derivativeParse(line)
+                    val parseTook = took(_start)
 
-                _start = if (PROFILE) Platform.getTimeNanos() else 0
-                val r = eval(parsed)
-                val evalTook = took(_start)
+                    _start = if (PROFILE) Platform.getTimeNanos() else 0
+                    val r = eval(parsed)
+                    val evalTook = took(_start)
 
-                if (PROFILE) {
-                    LOGGER.trace(":parse $parseTook")
-                    LOGGER.trace(":eval $evalTook")
+                    if (PROFILE) {
+                        LOGGER.trace(":parse $parseTook")
+                        LOGGER.trace(":eval $evalTook")
+                    }
+
+                    Platform.saveToHistory(line, historyLoaded)
+                    r
+                } catch (t: Throwable) {
+                    err(t.message ?: t::class.simpleName)
                 }
 
-                Platform.saveToHistory(line, historyLoaded)
-                r
-            } catch (t: Throwable) {
-                err(t.message ?: t::class.simpleName)
+                if (res is err)
+                    LOGGER.error(res.toString())
+                else
+                    LOGGER.info(res.toString())
             }
-            if (res is err) LOGGER.error(res.toString())
-            else LOGGER.info(res.toString())
-        } else Platform.exit(0)
+        } else
+            Platform.exit(0)
     }
 }
 

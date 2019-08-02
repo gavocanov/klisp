@@ -6,6 +6,7 @@ import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
 import org.jline.utils.AttributedString
 import org.jline.utils.AttributedStyle
+import org.jline.utils.AttributedStyle.*
 import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.*
@@ -27,10 +28,23 @@ val READER: LineReader = LineReaderBuilder.builder()
     .build()
 
 class KlispHighlighter : Highlighter {
-    override fun highlight(reader: LineReader?, buffer: String?): AttributedString {
-        if (buffer in stdEnv.keys.map { it.value })
-            return AttributedString(buffer, AttributedStyle.BOLD)
-        return AttributedString(buffer)
+    override fun highlight(reader: LineReader, buffer: String): AttributedString {
+        val i = stdEnv
+            .filter { (v, _) -> v.value == buffer.trim() }
+            .toList()
+            .firstOrNull()
+
+        if (i === null)
+            return AttributedString(buffer)
+
+        return when (i.second) {
+            is func -> AttributedString(buffer, AttributedStyle().foreground(GREEN))
+            is number<*> -> AttributedString(buffer, AttributedStyle().foreground(BLUE))
+            is string, is char -> AttributedString(buffer, AttributedStyle().foreground(MAGENTA))
+            is symbol -> AttributedString(buffer, AttributedStyle().foreground(CYAN))
+            is keyword -> AttributedString(buffer, BOLD)
+            else -> AttributedString(buffer)
+        }
     }
 }
 
@@ -41,7 +55,7 @@ class KlispCompleter : Completer {
                 Candidate(
                     v.value,
                     v.value,
-                    t::class.java.simpleName,
+                    t.docs,
                     null,
                     null,
                     null,
