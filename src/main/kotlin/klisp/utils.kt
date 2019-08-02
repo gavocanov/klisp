@@ -54,10 +54,10 @@ inline infix fun <reified T> List<T>.unApply(n: Int): List<Any?> {
     }
 
     val tl =
-            if (n <= size)
-                subList(n - 1, size)
-            else
-                emptyList()
+        if (n <= size)
+            subList(n - 1, size)
+        else
+            emptyList()
 
     return listOf(*hd.toTypedArray(), tl)
 }
@@ -83,17 +83,17 @@ infix fun <T> List<T>.cons(l: Iterable<T>): List<T> = this + l
  * split by space not contained in "", '', [] and {}
  */
 fun splitNotSurrounded(s: String): List<String> =
-        "[^\\s\"'{\\[]+|\"([^\"]*)\"|'([^']*)'|\\{([^{]*)}|\\[([^\\[]*)]"
-                .toRegex()
-                .findAll(s)
-                .map { it.value }
-                .toList()
+    "[^\\s\"'{\\[]+|\"([^\"]*)\"|'([^']*)'|\\{([^{]*)}|\\[([^\\[]*)]"
+        .toRegex()
+        .findAll(s)
+        .map { it.value }
+        .toList()
 
 object LOGGER {
     private val C = TermColors()
+    fun info(msg: Any?) = println(msg.toString())
     fun trace(msg: Any?) = println(C.gray(msg.toString()))
     fun debug(msg: Any?) = println(C.yellow(msg.toString()))
-    fun info(msg: Any?) = println(C.brightBlue(msg.toString()))
     fun warn(msg: Any?) = println(C.brightYellow(msg.toString()))
     fun error(msg: Any?) = println(C.brightRed(msg.toString()))
 }
@@ -194,8 +194,8 @@ object None : Option<Nothing>() {
  * using the static [Option.toOptional] method.
  */
 fun <T> T?.toOptional(): Option<T> =
-        if (this == null) None
-        else Some(this)
+    if (this == null) None
+    else Some(this)
 
 /**
  * Kind of pattern matching
@@ -206,9 +206,8 @@ data class Case<in O, out N>(val matchFunc: (O) -> Boolean,
 
 fun <T, N> T.match(vararg cases: Case<T, N>): N? {
     val matchingCase = cases
-            .filter { (matchFunc) -> matchFunc(this) }
-            .sortedBy { c -> c.isDefault }
-            .firstOrNull()
+        .filter { (matchFunc) -> matchFunc(this) }
+        .minBy { c -> c.isDefault }
     if (matchingCase == null) {
         throw RuntimeException("no match found")
     } else {
@@ -216,9 +215,8 @@ fun <T, N> T.match(vararg cases: Case<T, N>): N? {
     }
 }
 
-fun <O, N> case(matchFunc: (O) -> Boolean,
-                result: (O) -> N)
-        : Case<O, N> = Case(matchFunc, result)
+fun <O, N> case(matchFunc: (O) -> Boolean, result: (O) -> N)
+    : Case<O, N> = Case(matchFunc, result)
 
 fun <O, N> wildcard(result: (O) -> N)
-        : Case<O, N> = Case({ true }, result, true)
+    : Case<O, N> = Case({ true }, result, true)
