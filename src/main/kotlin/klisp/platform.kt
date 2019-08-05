@@ -24,13 +24,13 @@ val READER: LineReader = LineReaderBuilder.builder()
     .history(HISTORY)
     .terminal(TERMINAL)
     .completer(KlispCompleter())
-    .highlighter(KlispHighlighter())
+//    .highlighter(KlispHighlighter())
     .build()
 
 class KlispHighlighter : Highlighter {
     override fun highlight(reader: LineReader, buffer: String): AttributedString {
         val i = stdEnv
-            .filter { (v, _) -> v.value == buffer.trim() }
+            .filter { (v, _) -> v.value == buffer.trim().replace("(", "") }
             .toList()
             .firstOrNull()
 
@@ -50,19 +50,29 @@ class KlispHighlighter : Highlighter {
 
 class KlispCompleter : Completer {
     override fun complete(reader: LineReader, line: ParsedLine, candidates: MutableList<Candidate>) {
-        candidates.addAll(
-            stdEnv.map { (v, t) ->
-                Candidate(
-                    v.value,
-                    v.value,
-                    t.docs,
-                    null,
-                    null,
-                    null,
-                    true
-                )
-            }
-        )
+        val norm = stdEnv.map { (v, t) ->
+            Candidate(
+                v.value,
+                v.value,
+                t.docs,
+                null,
+                null,
+                null,
+                true
+            )
+        }
+        val bracketed = stdEnv.map { (v, t) ->
+            Candidate(
+                "(" + v.value,
+                v.value,
+                t.docs,
+                null,
+                null,
+                null,
+                true
+            )
+        }
+        candidates.addAll(norm + bracketed)
     }
 }
 

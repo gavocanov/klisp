@@ -1,4 +1,3 @@
-
 buildscript {
     ext.serialization_version = '0.11.1'
     ext.jline_version = '3.11.0'
