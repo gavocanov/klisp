@@ -18,21 +18,23 @@ enum class compareOp { lte, lt, gte, gt, eq }
 
 enum class mathOp { plus, minus, div, mul, pow, rem, abs }
 
-enum class specialForm(val aliases: List<String>? = null) {
+enum class specialForm(val aliases: List<String>? = null,
+                       val docs: String,
+                       val state: (() -> String)? = null) {
     // symbols
-    DEBUG,
-    PROFILE,
-    ENV(listOf("ls")),
+    DEBUG(docs = "show debug information on evaluation", state = { _DEBUG.toString() }),
+    PROFILE(docs = "show profiling info on evaluation", state = { _PROFILE.toString() }),
+    ENV(listOf("ls"), "show environment info"),
     // expressions
-    DEF(listOf("define")),
-    LAMBDA(listOf("lam")),
-    IF,
-    UNLESS,
-    WHEN,
-    FMAP,
-    FILTER,
-    REDUCE,
-    QUOTE;
+    DEF(listOf("define"), "define something"),
+    LAMBDA(listOf("lam"), "define a lambda, anonymous function"),
+    IF(docs = "start a 'if' expression"),
+    UNLESS(docs = "start a 'unless' expression, same as 'if not'"),
+    WHEN(docs = "start a 'when' expression, same as a 'if' without else"),
+    FMAP(docs = "map a function to collection elements"),
+    FILTER(docs = "filter elements of a collection using a predicate function"),
+    REDUCE(listOf("fold", "fold-left"), "reduce elements of a collection"),
+    QUOTE(docs = "quote a expression, evaluator does not evaluate it");
 
     companion object {
         private val aliases = values().mapNotNull { it.aliases }.flatten()
@@ -186,7 +188,7 @@ data class map(private val value: kmap) : atom, kmap by value, serializable {
 
 data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func {
     companion object {
-        private fun parseMeta(m: exp?) = if (m !== null && DEBUG) "<$m>" else ""
+        private fun parseMeta(m: exp?) = if (m !== null && _DEBUG) "<$m>" else ""
     }
 
     override val docs: String = "function"
@@ -196,12 +198,12 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
     override fun toString(): String = ":func ${parseMeta(meta)}"
 
     override fun invoke(p1: exps): exp {
-        val _start = if (PROFILE) Platform.getTimeNanos() else 0
+        val _start = if (_PROFILE) Platform.getTimeNanos() else 0
         val res = func(p1)
         when {
-            PROFILE && DEBUG -> LOGGER.trace(":func ($p1) -> $res, ${took(_start)}")
-            DEBUG -> LOGGER.debug(":func ($p1) -> $res")
-            PROFILE -> LOGGER.trace(":func ${took(_start)}")
+            _PROFILE && _DEBUG -> LOGGER.trace(":func ($p1) -> $res, ${took(_start)}")
+            _DEBUG -> LOGGER.debug(":func ($p1) -> $res")
+            _PROFILE -> LOGGER.trace(":func ${took(_start)}")
         }
         return res
     }

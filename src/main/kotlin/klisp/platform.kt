@@ -1,12 +1,14 @@
 package klisp
 
-import org.jline.reader.*
+import klisp.repl.KLCompleter
+import klisp.repl.KLHighlighter
+import org.jline.reader.EndOfFileException
+import org.jline.reader.LineReader
+import org.jline.reader.LineReaderBuilder
+import org.jline.reader.UserInterruptException
 import org.jline.reader.impl.history.DefaultHistory
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
-import org.jline.utils.AttributedString
-import org.jline.utils.AttributedStyle
-import org.jline.utils.AttributedStyle.*
 import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.*
@@ -23,58 +25,9 @@ val READER: LineReader = LineReaderBuilder.builder()
     .variable(LineReader.HISTORY_FILE, Platform.getHistoryFileName())
     .history(HISTORY)
     .terminal(TERMINAL)
-    .completer(KlispCompleter())
-//    .highlighter(KlispHighlighter())
+    .completer(KLCompleter())
+    .highlighter(KLHighlighter())
     .build()
-
-class KlispHighlighter : Highlighter {
-    override fun highlight(reader: LineReader, buffer: String): AttributedString {
-        val i = stdEnv
-            .filter { (v, _) -> v.value == buffer.trim().replace("(", "") }
-            .toList()
-            .firstOrNull()
-
-        if (i === null)
-            return AttributedString(buffer)
-
-        return when (i.second) {
-            is func -> AttributedString(buffer, AttributedStyle().foreground(GREEN))
-            is number<*> -> AttributedString(buffer, AttributedStyle().foreground(BLUE))
-            is string, is char -> AttributedString(buffer, AttributedStyle().foreground(MAGENTA))
-            is symbol -> AttributedString(buffer, AttributedStyle().foreground(CYAN))
-            is keyword -> AttributedString(buffer, BOLD)
-            else -> AttributedString(buffer)
-        }
-    }
-}
-
-class KlispCompleter : Completer {
-    override fun complete(reader: LineReader, line: ParsedLine, candidates: MutableList<Candidate>) {
-        val norm = stdEnv.map { (v, t) ->
-            Candidate(
-                v.value,
-                v.value,
-                t.docs,
-                null,
-                null,
-                null,
-                true
-            )
-        }
-        val bracketed = stdEnv.map { (v, t) ->
-            Candidate(
-                "(" + v.value,
-                v.value,
-                t.docs,
-                null,
-                null,
-                null,
-                true
-            )
-        }
-        candidates.addAll(norm + bracketed)
-    }
-}
 
 object Platform {
     fun getHistoryFileName(): String =

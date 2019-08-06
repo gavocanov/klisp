@@ -3,18 +3,18 @@
 package klisp
 
 fun eval(x: exp, env: env = stdEnv): exp {
-    if (DEBUG) LOGGER.debug(":eval <$x>")
+    if (_DEBUG) LOGGER.debug(":eval <$x>")
     return when {
         x is unit -> x
         x is symbol && specialForm.isSpecial(x.value) -> {
             when (specialForm.from(x.value)) {
                 specialForm.DEBUG -> {
-                    DEBUG = !DEBUG
-                    bool(DEBUG)
+                    _DEBUG = !_DEBUG
+                    bool(_DEBUG)
                 }
                 specialForm.PROFILE -> {
-                    PROFILE = !PROFILE
-                    bool(PROFILE)
+                    _PROFILE = !_PROFILE
+                    bool(_PROFILE)
                 }
                 specialForm.ENV -> {
                     env.forEach { (k, v) -> LOGGER.trace("$k -> $v") }
@@ -114,7 +114,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
                 throw IllegalArgumentException("first argument should be a function")
             }
 
-            if (PROFILE && DEBUG) proc.meta = x
+            if (_PROFILE && _DEBUG) proc.meta = x
 
             val args = x.drop(1).map { eval(it, env) }
             try {

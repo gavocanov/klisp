@@ -6,8 +6,8 @@ import klisp.parser.derivativeParse
 import org.jline.builtins.Options
 import kotlin.system.exitProcess
 
-var PROFILE = false
-var DEBUG = false
+var _PROFILE = false
+var _DEBUG = false
 val VERSION_STR = "klisp-${Platform.platformId()} v$VERSION-$GIT_REVISION (git:$GIT_SHA), compiled on $BUILD_DATE"
 const val HISTORY_FILE_NAME = ".kl_history"
 
@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
 }
 
 private fun start(args: Array<String>) {
-    LOGGER.info(VERSION_STR)
+    LOGGER.info(VERSION_STR + ", pid: " + ProcessHandle.current().pid())
 
     val usage = arrayOf(
         "Usage:",
@@ -51,15 +51,15 @@ fun repl() {
         if (line !== null) {
             if (!line.isBlank()) {
                 val res = try {
-                    var _start = if (PROFILE) Platform.getTimeNanos() else 0
+                    var _start = if (_PROFILE) Platform.getTimeNanos() else 0
                     val parsed = derivativeParse(line)
                     val parseTook = took(_start)
 
-                    _start = if (PROFILE) Platform.getTimeNanos() else 0
+                    _start = if (_PROFILE) Platform.getTimeNanos() else 0
                     val r = eval(parsed)
                     val evalTook = took(_start)
 
-                    if (PROFILE) {
+                    if (_PROFILE) {
                         LOGGER.trace(":parse $parseTook")
                         LOGGER.trace(":eval $evalTook")
                     }
