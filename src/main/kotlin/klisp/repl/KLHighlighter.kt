@@ -4,47 +4,37 @@ import klisp.*
 import org.jline.reader.Highlighter
 import org.jline.reader.LineReader
 import org.jline.utils.AttributedString
+import org.jline.utils.AttributedString.EMPTY
+import org.jline.utils.AttributedString.join
 import org.jline.utils.AttributedStyle
 
 class KLHighlighter : Highlighter {
     companion object {
-        private val PREFIXES = arrayOf("(" to AttributedString("("), ":" to AttributedString(":"))
-        private val SUFFIXES = arrayOf(")" to AttributedString(")"))
         private val SPACE = AttributedString(" ")
     }
 
     override fun highlight(reader: LineReader, buffer: String): AttributedString {
         val endSpace = buffer.endsWith(" ")
+
         val ass = buffer
             .split(" ")
             .map { w ->
-                val p = PREFIXES.mapNotNull { (p, ap) ->
-                    if (w.startsWith(p) && w.length > 1) {
-                        AttributedString.join(
-                            AttributedString.EMPTY,
-                            ap,
-                            doWord(w.substringAfter(p))
-                        )
-                    } else null
-                }
+                val word = w
+                    .replace(")", "")
+                    .replace("(", "")
+                    .replace(":", "")
 
-                val s = SUFFIXES.mapNotNull { (s, ass) ->
-                    if (w.endsWith(s) && w.length > 1) {
-                        AttributedString.join(
-                            AttributedString.EMPTY,
-                            doWord(w.substringBefore(s)),
-                            ass
-                        )
-                    } else null
-                }
+                if (word.isNotBlank()) {
+                    join(
+                        EMPTY,
+                        AttributedString(w.substringBefore(word)),
+                        doWord(word),
+                        AttributedString(w.substringAfter(word))
+                    )
+                } else AttributedString(w)
+            }
 
-                val r = p + s
-                if (r.isNotEmpty()) r
-                else listOf(doWord(w))
-            }.flatten()
-        val joined = AttributedString.join(SPACE, ass)
-        return if (endSpace) AttributedString.join(AttributedString.EMPTY, joined, SPACE)
-        else joined
+        return join(SPACE, if (endSpace) ass + SPACE else ass)
     }
 
     private fun doWord(word: String): AttributedString {
