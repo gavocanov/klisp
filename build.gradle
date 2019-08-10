@@ -3,6 +3,8 @@ buildscript {
     ext.jline_version = '3.11.0'
     ext.gversion_version = '1.4.0'
     ext.apache_sshd_version = '2.2.0'
+    ext.lsp4j_version = '0.7.2'
+    ext.coroutines_version = '1.2.2'
 }
 
 plugins {
@@ -29,10 +31,14 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
 
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$serialization_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
 
     implementation "org.jline:jline-terminal-jansi:$jline_version"
     implementation "org.jline:jline-reader:$jline_version"
     implementation "org.jline:jline-remote-ssh:$jline_version"
+
+    implementation "org.eclipse.lsp4j:org.eclipse.lsp4j:$lsp4j_version"
+    implementation "org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:$lsp4j_version"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'

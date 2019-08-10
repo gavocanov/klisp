@@ -2,6 +2,7 @@
 
 package klisp
 
+import klisp.lsp.LSPService
 import klisp.parser.derivativeParse
 import org.jline.builtins.Options
 import kotlin.system.exitProcess
@@ -21,13 +22,21 @@ private fun start(args: Array<String>) {
     val usage = arrayOf(
         "Usage:",
         "klisp - start a KLisp repl session",
-        "  -h --help                show help"
+        "  -l --lsp                start a LSP server",
+        "  -p --port               LSP server port, default 11666",
+        "  -h --help               show help"
     )
 
     val opts = Options.compile(usage).parse(args)
-    if (opts.isSet("help")) {
-        LOGGER.info(opts.usage())
-        exitProcess(0)
+    when {
+        opts.isSet("help") -> {
+            LOGGER.info(opts.usage())
+            exitProcess(0)
+        }
+        opts.isSet("lsp") -> {
+            val port = if (opts.isSet("port")) opts.getNumber("port") else 11666
+            LSPService(port)
+        }
     }
 
     repl()

@@ -96,6 +96,7 @@ object LOGGER {
     fun debug(msg: Any?) = println(C.yellow(msg.toString()))
     fun warn(msg: Any?) = println(C.brightYellow(msg.toString()))
     fun error(msg: Any?) = println(C.brightRed(msg.toString()))
+    fun lsp(msg: Any?) = Unit
 }
 
 class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {

@@ -12,6 +12,7 @@ import org.jline.terminal.TerminalBuilder
 import java.nio.file.Paths
 import java.text.NumberFormat
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.system.exitProcess
 
 val HISTORY = DefaultHistory()
@@ -73,7 +74,7 @@ object Platform {
     fun console(): Boolean = System.console() !== null
 }
 
-class Memoize<I, O> constructor(private val backingMap: MutableMap<I, O>,
+class Memoize<I, O> constructor(private val backingMap: MutableMap<I, O> = ConcurrentHashMap(),
                                 private val fn: (I) -> O) : (I) -> O {
     override fun invoke(i: I): O = backingMap.getOrPut(i) { fn(i) }
 }
