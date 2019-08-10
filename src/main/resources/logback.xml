@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false" scan="true" scanPeriod="5 seconds">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <withJansi>true</withJansi>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--<pattern>%d{HH:mm:ss:SSS} %highlight(%-5level) [%green(%thread)] %cyan(%logger{10}) - %msg %n</pattern>-->
+            <pattern>%d{HH:mm:ss:SSS} %highlight(%-5level) [%green(%thread)] - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="klisp" level="trace"/>
+
+    <root>
+        <level value="WARN"/>
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

@@ -1,6 +1,7 @@
 package klisp.lsp
 
 import klisp.LOGGER
+import klisp.lsp
 import klisp.specialForm
 import klisp.stdEnv
 import kotlinx.coroutines.*

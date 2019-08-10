@@ -5,6 +5,8 @@ buildscript {
     ext.apache_sshd_version = '2.2.0'
     ext.lsp4j_version = '0.7.2'
     ext.coroutines_version = '1.2.2'
+    ext.logging_version = '1.7.4'
+    ext.logback_version = '1.2.3'
 }
 
 plugins {
@@ -39,6 +41,9 @@ dependencies {
 
     implementation "org.eclipse.lsp4j:org.eclipse.lsp4j:$lsp4j_version"
     implementation "org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:$lsp4j_version"
+
+    compile "io.github.microutils:kotlin-logging:$logging_version"
+    runtime "ch.qos.logback:logback-classic:$logback_version"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'

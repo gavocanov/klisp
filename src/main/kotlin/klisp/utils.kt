@@ -2,7 +2,8 @@
 
 package klisp
 
-import tty.TermColors
+import mu.KLogger
+import mu.KotlinLogging
 
 fun took(_start: Long) = "took ${Platform.strFormat(((Platform.getTimeNanos() - _start) / 1e6))} ms"
 
@@ -89,6 +90,7 @@ fun splitNotSurrounded(s: String): List<String> =
         .map { it.value }
         .toList()
 
+/*
 object LOGGER {
     private val C = TermColors()
     fun info(msg: Any?) = println(msg.toString())
@@ -98,6 +100,12 @@ object LOGGER {
     fun error(msg: Any?) = println(C.brightRed(msg.toString()))
     fun lsp(msg: Any?) = Unit
 }
+*/
+val LOGGER = KotlinLogging.logger {}
+
+fun KLogger.lsp(msg: String) = this.debug { msg }
+fun KLogger.lsp(fn: () -> Any?) = this.debug(fn)
+fun KLogger.lsp(msg: Any?) = this.debug { msg }
 
 class ChainMap<K, V>(private val map: MutableMap<K, V>) : MutableMap<K, V> {
     private val innerMap = mutableMapOf<K, V>()

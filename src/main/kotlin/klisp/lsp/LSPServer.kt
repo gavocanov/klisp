@@ -1,6 +1,7 @@
 package klisp.lsp
 
 import klisp.LOGGER
+import klisp.lsp
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.services.*

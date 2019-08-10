@@ -1,6 +1,7 @@
 package klisp.lsp
 
 import klisp.LOGGER
+import klisp.lsp
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams
 import org.eclipse.lsp4j.services.WorkspaceService
