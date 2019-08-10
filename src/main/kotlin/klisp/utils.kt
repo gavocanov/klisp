@@ -90,19 +90,7 @@ fun splitNotSurrounded(s: String): List<String> =
         .map { it.value }
         .toList()
 
-/*
-object LOGGER {
-    private val C = TermColors()
-    fun info(msg: Any?) = println(msg.toString())
-    fun trace(msg: Any?) = println(C.gray(msg.toString()))
-    fun debug(msg: Any?) = println(C.yellow(msg.toString()))
-    fun warn(msg: Any?) = println(C.brightYellow(msg.toString()))
-    fun error(msg: Any?) = println(C.brightRed(msg.toString()))
-    fun lsp(msg: Any?) = Unit
-}
-*/
 val LOGGER = KotlinLogging.logger {}
-
 fun KLogger.lsp(msg: String) = this.debug { msg }
 fun KLogger.lsp(fn: () -> Any?) = this.debug(fn)
 fun KLogger.lsp(msg: Any?) = this.debug { msg }

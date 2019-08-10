@@ -1,9 +1,6 @@
 package klisp.lsp
 
-import klisp.LOGGER
-import klisp.lsp
-import klisp.specialForm
-import klisp.stdEnv
+import klisp.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import org.eclipse.lsp4j.*
@@ -197,12 +194,38 @@ class LSPTextDocument : TextDocumentService {
         return try {
             val ctx = txt.toAcCtx(pos)
             LOGGER.lsp { "doc: ${position.textDocument.uri}, kind: $kind, pos: $pos, ctx: $ctx" }
-
-            completedFuture(Either.forLeft(mutableListOf()))
+            val std = stdEnv.entries.map { (s, e) ->
+                val ci = CompletionItem(s.value)
+                ci.documentation = Either.forLeft(e.docs)
+                ci.kind = klType2lsp(e)
+                ci
+            }
+            val spec = specialForm.values().map { sf ->
+                val ci = CompletionItem(sf.name.toLowerCase())
+                ci.documentation = Either.forLeft(sf.docs)
+                ci.kind = CompletionItemKind.Keyword
+                val ass = sf.aliases?.map { a ->
+                    val cit = CompletionItem(a)
+                    cit.documentation = ci.documentation
+                    cit.kind = ci.kind
+                    cit
+                } ?: emptyList()
+                ass + ci
+            }.flatten()
+            completedFuture(Either.forLeft((std + spec).toMutableList()))
         } catch (t: Throwable) {
             LOGGER.warn { "complete failed: ${t.message}" }
             completedFuture(null)
         }
+    }
+
+    private fun klType2lsp(type: Any): CompletionItemKind = when (type) {
+        is func -> CompletionItemKind.Function
+        is symbol -> CompletionItemKind.Constant
+        is keyword -> CompletionItemKind.Keyword
+        is string -> CompletionItemKind.Text
+        is number<*> -> CompletionItemKind.Constant
+        else -> throw IllegalArgumentException("unknown type <$type>")
     }
 
     override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
@@ -218,10 +241,9 @@ class LSPTextDocument : TextDocumentService {
             val docs = stdEnv
                 .entries
                 .firstOrNull { (s, _) -> s.value == ctx }
-                ?.key
-                ?.docs
-                ?: specialForm.from(ctx).docs
-            completedFuture(Hover(MarkupContent(MarkupKind.MARKDOWN, docs)))
+                ?.value
+                ?: if (specialForm.isSpecial(ctx)) specialForm.from(ctx).docs else null
+            completedFuture(Hover(MarkupContent(MarkupKind.MARKDOWN, if (docs !== null) docs.toString() else null)))
         } catch (t: Throwable) {
             LOGGER.warn { "hover failed: ${t.message}" }
             completedFuture(null)
