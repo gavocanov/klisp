@@ -17,7 +17,6 @@ import java.util.concurrent.Executors
 
 class LSPTextDocument : TextDocumentService {
     companion object {
-        //        private val UNDEFINED_RANGE = Range(Position(), Position())
         private var TC = 0
     }
 
@@ -38,27 +37,24 @@ class LSPTextDocument : TextDocumentService {
     private fun launch(name: String = "crt", fn: suspend () -> Unit): Job =
         CoroutineScope(disp + CoroutineName(name)).launch { fn() }
 
-    private fun startDiagPull() = launch("pull-diags") {
-        LOGGER.info { "lsp diagnostics pull started" }
-        while (pulling) {
-            val dr = chanDiags.receive()
-            LOGGER.lsp { "diag pull $dr" }
+    private fun startDiagPull() = Unit
+/*
+        launch("pull-diags") {
+            while (pulling) {
+                val dr = chanDiags.receive()
+                // TODO
+            }
         }
-    }
+*/
 
     private fun startChangePull() = launch("pull-chtrk") {
-        LOGGER.info { "lsp changes tracking pull started" }
-        while (pulling) {
-            val params = chanChtrk.receive()
-            procChange(params)
-            LOGGER.lsp { "chtrk pull $params" }
-        }
+        while (pulling)
+            procChange(chanChtrk.receive())
     }
 
     fun disconnectClient() {
         this.pulling = false
         this.client = null
-        LOGGER.info { "lsp client disconnected" }
     }
 
     fun connectClient(client: LanguageClient) {
@@ -66,7 +62,6 @@ class LSPTextDocument : TextDocumentService {
         this.pulling = true
         startChangePull()
         startDiagPull()
-        LOGGER.info { "lsp client connected" }
     }
 
     private fun String.toAcCtx(pos: Position): String {
@@ -136,24 +131,20 @@ class LSPTextDocument : TextDocumentService {
     }
 
     override fun didOpen(params: DidOpenTextDocumentParams) {
-        LOGGER.lsp { "open: $params" }
         val doc = params.textDocument
         docs.computeIfAbsent(doc.uri) { doc.text }
         launch("send-diags") { chanDiags.send(doc.uri to doc.text) }
     }
 
     override fun didSave(params: DidSaveTextDocumentParams) {
-        LOGGER.lsp { "save: $params" }
         val doc = params.textDocument
         val txt = docs[doc.uri] ?: throw IllegalStateException("doc ${doc.uri} not found")
         launch("send-diags") { chanDiags.send(doc.uri to txt) }
     }
 
     override fun didClose(params: DidCloseTextDocumentParams) {
-        LOGGER.lsp { "close: $params" }
         val doc = params.textDocument
         docs.remove(doc.uri)
-        LOGGER.debug { "docs: $docs" }
     }
 
     private fun procChange(params: DidChangeTextDocumentParams) {
@@ -166,34 +157,31 @@ class LSPTextDocument : TextDocumentService {
                 else
                     patch(acc, action)
             } catch (t: Throwable) {
-                LOGGER.error { "edit failed: ${t.message}" }
                 txt
             }
         }
         docs.computeIfPresent(doc.uri) { _, _ -> newTxt }
-        LOGGER.lsp { "doc: ${doc.uri}, text:\n${newTxt.replace("\n", "|")}" }
         launch("send-diags") { chanDiags.send(doc.uri to newTxt) }
     }
 
     override fun didChange(params: DidChangeTextDocumentParams) {
         launch("send-chtrk") {
-            LOGGER.lsp { "change: $params" }
             chanChtrk.send(params)
         }
     }
 
     override fun completion(position: CompletionParams)
         : CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
-        LOGGER.lsp { "complete: $position" }
 
+/*
         val txt = docs[position.textDocument.uri]
             ?: throw IllegalStateException("doc ${position.textDocument.uri} not found")
         val kind = position.context.triggerKind to position.context.triggerCharacter
         val pos = position.position
+*/
 
         return try {
-            val ctx = txt.toAcCtx(pos)
-            LOGGER.lsp { "doc: ${position.textDocument.uri}, kind: $kind, pos: $pos, ctx: $ctx" }
+//            val ctx = txt.toAcCtx(pos)
             val std = stdEnv.entries.map { (s, e) ->
                 val ci = CompletionItem(s.value)
                 ci.documentation = Either.forLeft(e.docs)
@@ -214,7 +202,6 @@ class LSPTextDocument : TextDocumentService {
             }.flatten()
             completedFuture(Either.forLeft((std + spec).toMutableList()))
         } catch (t: Throwable) {
-            LOGGER.warn { "complete failed: ${t.message}" }
             completedFuture(null)
         }
     }
@@ -229,15 +216,12 @@ class LSPTextDocument : TextDocumentService {
     }
 
     override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
-        LOGGER.lsp { "hover: $position" }
-
         val txt = docs[position.textDocument.uri]
             ?: throw IllegalStateException("doc ${position.textDocument.uri} not found")
         val pos = position.position
 
         return try {
             val ctx = txt.toHoverCtx(pos)
-            LOGGER.lsp { "doc: ${position.textDocument.uri}, pos: $pos, ctx: $ctx" }
             val docs = stdEnv
                 .entries
                 .firstOrNull { (s, _) -> s.value == ctx }
@@ -245,7 +229,6 @@ class LSPTextDocument : TextDocumentService {
                 ?: if (specialForm.isSpecial(ctx)) specialForm.from(ctx).docs else null
             completedFuture(Hover(MarkupContent(MarkupKind.MARKDOWN, if (docs !== null) docs.toString() else null)))
         } catch (t: Throwable) {
-            LOGGER.warn { "hover failed: ${t.message}" }
             completedFuture(null)
         }
     }
