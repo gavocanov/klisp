@@ -8,12 +8,8 @@ import org.jline.reader.LineReader
 import org.jline.reader.ParsedLine
 
 class KLCompleter : Completer {
-    override fun complete(reader: LineReader, line: ParsedLine, candidates: MutableList<Candidate>) {
-        candidates.addAll(ALL)
-    }
-
     companion object {
-        private val spec = specialForm.values().map { c ->
+        private fun spec() = specialForm.values().map { c ->
             val state = c.state?.invoke()
             val stateStr = if (state !== null) ", current state: $state"
             else ""
@@ -64,7 +60,7 @@ class KLCompleter : Completer {
             ass + candidate + b_candidate
         }.flatten()
 
-        private val env = stdEnv.map { (v, t) ->
+        private fun std() = stdEnv.map { (v, t) ->
             listOf(
                 Candidate(
                     v.value,
@@ -87,6 +83,10 @@ class KLCompleter : Completer {
             )
         }.flatten()
 
-        private val ALL = spec + env
+        private fun all() = spec() + std()
+    }
+
+    override fun complete(reader: LineReader, line: ParsedLine, candidates: MutableList<Candidate>) {
+        candidates.addAll(all())
     }
 }

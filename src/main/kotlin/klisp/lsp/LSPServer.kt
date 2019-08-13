@@ -7,8 +7,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
 
 class LSPServer : LanguageServer, LanguageClientAware {
-    private val ws = LSPWorkspace()
     private val tds = LSPTextDocument()
+    private val ws = LSPWorkspace()
 
     override fun getWorkspaceService(): WorkspaceService = ws
 
@@ -32,12 +32,12 @@ class LSPServer : LanguageServer, LanguageClientAware {
         capabilities.workspace.workspaceFolders.changeNotifications = Either.forRight(true)
         capabilities.completionProvider = CompletionOptions(false, listOf("."))
         capabilities.hoverProvider = true
+        capabilities.codeActionProvider = Either.forLeft(true)
         capabilities.documentSymbolProvider = true
 
         capabilities.definitionProvider = false
         capabilities.workspaceSymbolProvider = false
         capabilities.referencesProvider = false
-        capabilities.codeActionProvider = Either.forLeft(false)
 
         return completedFuture(InitializeResult(capabilities))
     }

@@ -8,4 +8,5 @@ module klisp.main {
     requires org.eclipse.lsp4j.jsonrpc;
     requires jline.reader;
     requires jline.terminal;
+    requires gson;
 }

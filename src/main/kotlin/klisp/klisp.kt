@@ -37,26 +37,7 @@ fun repl() {
 
         if (line !== null) {
             if (!line.isBlank()) {
-                val res = try {
-                    var _start = if (_PROFILE) Platform.getTimeNanos() else 0
-                    val parsed = derivativeParse(line)
-                    val parseTook = took(_start)
-
-                    _start = if (_PROFILE) Platform.getTimeNanos() else 0
-                    val r = eval(parsed)
-                    val evalTook = took(_start)
-
-                    if (_PROFILE) {
-                        LOGGER.trace(":parse $parseTook")
-                        LOGGER.trace(":eval $evalTook")
-                    }
-
-                    Platform.saveToHistory(line, historyLoaded)
-                    r
-                } catch (t: Throwable) {
-                    err(t.message ?: t::class.simpleName)
-                }
-
+                val res = evaluate(line, historyLoaded)
                 if (res is err)
                     LOGGER.error(res.toString())
                 else
@@ -65,5 +46,25 @@ fun repl() {
         } else
             Platform.exit(0)
     }
+}
+
+fun evaluate(code: String, saveHistory: Boolean): exp = try {
+    var _start = if (_PROFILE) Platform.getTimeNanos() else 0
+    val parsed = derivativeParse(code)
+    val parseTook = took(_start)
+
+    _start = if (_PROFILE) Platform.getTimeNanos() else 0
+    val r = eval(parsed)
+    val evalTook = took(_start)
+
+    if (_PROFILE) {
+        LOGGER.trace(":parse $parseTook")
+        LOGGER.trace(":eval $evalTook")
+    }
+
+    Platform.saveToHistory(code, saveHistory)
+    r
+} catch (t: Throwable) {
+    err(t.message ?: t::class.simpleName)
 }
 

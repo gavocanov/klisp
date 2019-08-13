@@ -64,17 +64,6 @@ class LSPTextDocument : TextDocumentService {
         startDiagPull()
     }
 
-    private fun String.toAcCtx(pos: Position): String {
-        val range = toRawPos(pos)
-        val s = range.first
-        val e = range.second - 1 // last is dot
-        return this
-            .substring(s, e)
-            .reversed()
-            .takeWhile(::isNotWordBoundary)
-            .reversed()
-    }
-
     private fun String.toHoverCtx(pos: Position): String {
         val (_, e) = toRawPos(pos)
         val lineLeft = this.substring(0, e).substringAfterLast('\n')
@@ -171,39 +160,28 @@ class LSPTextDocument : TextDocumentService {
     }
 
     override fun completion(position: CompletionParams)
-        : CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
-
-/*
-        val txt = docs[position.textDocument.uri]
-            ?: throw IllegalStateException("doc ${position.textDocument.uri} not found")
-        val kind = position.context.triggerKind to position.context.triggerCharacter
-        val pos = position.position
-*/
-
-        return try {
-//            val ctx = txt.toAcCtx(pos)
-            val std = stdEnv.entries.map { (s, e) ->
-                val ci = CompletionItem(s.value)
-                ci.documentation = Either.forLeft(e.docs)
-                ci.kind = klType2lsp(e)
-                ci
-            }
-            val spec = specialForm.values().map { sf ->
-                val ci = CompletionItem(sf.name.toLowerCase())
-                ci.documentation = Either.forLeft(sf.docs)
-                ci.kind = CompletionItemKind.Keyword
-                val ass = sf.aliases?.map { a ->
-                    val cit = CompletionItem(a)
-                    cit.documentation = ci.documentation
-                    cit.kind = ci.kind
-                    cit
-                } ?: emptyList()
-                ass + ci
-            }.flatten()
-            completedFuture(Either.forLeft((std + spec).toMutableList()))
-        } catch (t: Throwable) {
-            completedFuture(null)
+        : CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> = try {
+        val std = stdEnv.entries.map { (s, e) ->
+            val ci = CompletionItem(s.value)
+            ci.documentation = Either.forLeft(e.docs)
+            ci.kind = klType2lsp(e)
+            ci
         }
+        val spec = specialForm.values().map { sf ->
+            val ci = CompletionItem(sf.name.toLowerCase())
+            ci.documentation = Either.forLeft(sf.docs)
+            ci.kind = CompletionItemKind.Keyword
+            val ass = sf.aliases?.map { a ->
+                val cit = CompletionItem(a)
+                cit.documentation = ci.documentation
+                cit.kind = ci.kind
+                cit
+            } ?: emptyList()
+            ass + ci
+        }.flatten()
+        completedFuture(Either.forLeft((std + spec).toMutableList()))
+    } catch (t: Throwable) {
+        completedFuture(null)
     }
 
     private fun klType2lsp(type: Any): CompletionItemKind = when (type) {
@@ -231,5 +209,28 @@ class LSPTextDocument : TextDocumentService {
         } catch (t: Throwable) {
             completedFuture(null)
         }
+    }
+
+    override fun codeAction(params: CodeActionParams): CompletableFuture<List<Either<Command, CodeAction>>> {
+        val start = params.range.start
+        val end = params.range.end
+        val hasSelection = (end.character - start.character) > 1 || (end.line - start.line) != 0
+
+//        LOGGER.debug("\nstart: $start, end: $end, hasSel: $hasSelection\n")
+
+        return completedFuture(
+            listOf(
+                Either.forLeft(
+                    Command(
+                        if (hasSelection) "Evaluate selection" else "Evaluate file",
+                        LSPWorkspace.EVAL,
+                        listOf(
+                            docs[params.textDocument.uri],
+                            params.range
+                        )
+                    )
+                )
+            )
+        )
     }
 }
