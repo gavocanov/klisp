@@ -2,12 +2,9 @@ package klisp.lsp
 
 import com.google.gson.Gson
 import com.google.gson.JsonElement
-import klisp.LOGGER
 import klisp.err
 import klisp.evaluate
-import org.eclipse.lsp4j.DidChangeConfigurationParams
-import org.eclipse.lsp4j.DidChangeWatchedFilesParams
-import org.eclipse.lsp4j.ExecuteCommandParams
+import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.WorkspaceService
@@ -19,32 +16,53 @@ class LSPWorkspace : WorkspaceService, LanguageClientAware {
         private val gson = Gson()
     }
 
-    private lateinit var languageClient: LanguageClient
+    private lateinit var client: LanguageClient
 
-    override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams?) = Unit
-    override fun didChangeConfiguration(params: DidChangeConfigurationParams?) = Unit
+    override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) = Unit
+    override fun didChangeConfiguration(params: DidChangeConfigurationParams) = Unit
 
     override fun connect(client: LanguageClient) {
-        languageClient = client
+        this.client = client
     }
 
     override fun executeCommand(params: ExecuteCommandParams): CompletableFuture<Any> {
         val args = params.arguments
         when (params.command) {
             EVAL -> {
-                val content = gson.fromJson(args[0] as JsonElement, String::class.java)
-//                val range = gson.fromJson(args[1] as JsonElement, Range::class.java)
+                val uri = gson.fromJson(args[0] as JsonElement, String::class.java)
+                val content = gson.fromJson(args[1] as JsonElement, String::class.java)
+                val range = gson.fromJson(args[2] as JsonElement, Range::class.java)
+                val start = range.start
+                val end = range.end
+                val hasSelection =
+                    (end.character - start.character) != 0 || (end.line - start.line) > 1
 
-                val lines = content
+                val lines = (if (hasSelection) extractRange(content, range) else content)
                     .split('\n')
                     .filter { !it.startsWith(";") && it.isNotBlank() }
 
                 for (line in lines) {
                     val res = evaluate(line, false)
                     if (res is err) {
-                        LOGGER.error("\nerror evaluating '$line':\n$res")
+                        val diag = Diagnostic()
+                        diag.severity = DiagnosticSeverity.Error
+                        diag.message = res.msg
+                        diag.range = range
+
+                        val diags = mutableListOf(diag)
+                        val pdiag = PublishDiagnosticsParams(uri, diags)
+                        client.publishDiagnostics(pdiag)
                         break
-                    } else LOGGER.info("\n$res")
+                    } else {
+                        val diag = Diagnostic()
+                        diag.severity = DiagnosticSeverity.Information
+                        diag.message = res.toString()
+                        diag.range = range
+
+                        val diags = mutableListOf(diag)
+                        val pdiag = PublishDiagnosticsParams(uri, diags)
+                        client.publishDiagnostics(pdiag)
+                    }
                 }
             }
         }

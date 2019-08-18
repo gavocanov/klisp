@@ -1,6 +1,7 @@
 package klisp.lsp
 
-import klisp.*
+import klisp.specialForm
+import klisp.stdEnv
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import org.eclipse.lsp4j.*
@@ -62,33 +63,6 @@ class LSPTextDocument : TextDocumentService {
         this.pulling = true
         startChangePull()
         startDiagPull()
-    }
-
-    private fun String.toHoverCtx(pos: Position): String {
-        val (_, e) = toRawPos(pos)
-        val lineLeft = this.substring(0, e).substringAfterLast('\n')
-        val lineRight = this.substring(e).substringBefore('\n')
-        val line = lineLeft + lineRight
-        val wordLeft = line.substring(0, pos.character).reversed().takeWhile(::isNotWordBoundary).reversed()
-        val wordRight = line.substring(pos.character).takeWhile(::isNotWordBoundary)
-        return (wordLeft + wordRight)
-            .replace("(", "")
-            .replace(")", "")
-    }
-
-    private fun isNotWordBoundary(c: Char) = c !in listOf(' ', '.', ')', '\n')
-
-    private fun String.toRawPos(pos: Position): Pair<Int, Int> {
-        val reader = BufferedReader(StringReader(this))
-        val writer = StringWriter()
-        // Skip unchanged lines
-        var line = 0
-        while (line < pos.line) {
-            writer.write(reader.readLine() + '\n')
-            line++
-        }
-        val start = writer.toString().length
-        return start to (start + pos.character)
     }
 
     private fun patch(sourceText: String, change: TextDocumentContentChangeEvent): String {
@@ -164,7 +138,7 @@ class LSPTextDocument : TextDocumentService {
         val std = stdEnv.entries.map { (s, e) ->
             val ci = CompletionItem(s.value)
             ci.documentation = Either.forLeft(e.docs)
-            ci.kind = klType2lsp(e)
+            ci.kind = e.toLspType()
             ci
         }
         val spec = specialForm.values().map { sf ->
@@ -182,15 +156,6 @@ class LSPTextDocument : TextDocumentService {
         completedFuture(Either.forLeft((std + spec).toMutableList()))
     } catch (t: Throwable) {
         completedFuture(null)
-    }
-
-    private fun klType2lsp(type: Any): CompletionItemKind = when (type) {
-        is func -> CompletionItemKind.Function
-        is symbol -> CompletionItemKind.Constant
-        is keyword -> CompletionItemKind.Keyword
-        is string -> CompletionItemKind.Text
-        is number<*> -> CompletionItemKind.Constant
-        else -> throw IllegalArgumentException("unknown type <$type>")
     }
 
     override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
@@ -214,9 +179,8 @@ class LSPTextDocument : TextDocumentService {
     override fun codeAction(params: CodeActionParams): CompletableFuture<List<Either<Command, CodeAction>>> {
         val start = params.range.start
         val end = params.range.end
-        val hasSelection = (end.character - start.character) > 1 || (end.line - start.line) != 0
-
-//        LOGGER.debug("\nstart: $start, end: $end, hasSel: $hasSelection\n")
+        val hasSelection =
+            (end.character - start.character) != 0 || (end.line - start.line) > 1
 
         return completedFuture(
             listOf(
@@ -225,6 +189,7 @@ class LSPTextDocument : TextDocumentService {
                         if (hasSelection) "Evaluate selection" else "Evaluate file",
                         LSPWorkspace.EVAL,
                         listOf(
+                            params.textDocument.uri,
                             docs[params.textDocument.uri],
                             params.range
                         )

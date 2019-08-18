@@ -16,6 +16,7 @@ class LSPServer : LanguageServer, LanguageClientAware {
 
     override fun connect(client: LanguageClient) {
         tds.connectClient(client)
+        ws.connect(client)
     }
 
     override fun shutdown(): CompletableFuture<Any> = completedFuture(Unit)
