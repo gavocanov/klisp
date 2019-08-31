@@ -196,17 +196,7 @@ data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func 
     override fun fromJson(s: String): atom = throw IllegalStateException("can't deserialize a function")
     override var meta: exp? = null
     override fun toString(): String = ":func ${parseMeta(meta)}"
-
-    override fun invoke(p1: exps): exp {
-        val _start = if (_PROFILE) Platform.getTimeNanos() else 0
-        val res = func(p1)
-        when {
-            _PROFILE && _DEBUG -> LOGGER.trace(":func ($p1) -> $res, ${took(_start)}")
-            _DEBUG -> LOGGER.debug(":func ($p1) -> $res")
-            _PROFILE -> LOGGER.trace(":func ${took(_start)}")
-        }
-        return res
-    }
+    override fun invoke(p1: exps): exp = func(p1)
 }
 
 data class char(val value: Char) : scalar() {
