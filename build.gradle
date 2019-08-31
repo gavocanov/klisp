@@ -1,14 +1,14 @@
 buildscript {
-    ext.serialization_version = '0.11.1'
+    ext.serialization_version = '0.12.0'
     ext.jline_version = '3.12.1'
     ext.gversion_version = '1.4.0'
     ext.lsp4j_version = '0.7.2'
-    ext.coroutines_version = '1.2.2'
+    ext.coroutines_version = '1.3.0'
 }
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.3.41'
-    id 'kotlinx-serialization' version '1.3.41'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.50'
+    id 'kotlinx-serialization' version '1.3.50'
     id 'com.peterabeles.gversion' version '1.4.0'
     id 'com.github.johnrengelman.shadow' version '5.0.0'
     id 'application'
@@ -18,6 +18,11 @@ repositories {
     jcenter()
     mavenCentral()
     maven { url "https://kotlin.bintray.com/kotlinx" }
+}
+
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+    gradleVersion = "5.6.1"
 }
 
 group = 'org.cth.klisp'
