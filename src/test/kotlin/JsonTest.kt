@@ -51,6 +51,6 @@ class JsonTest {
         Json.stringify(String.serializer(), "\"1\"") shouldEqual _eval("\"1\"").toJson()
         Json.stringify(String.serializer(), "\"i love my 'shoes'\"") shouldEqual _eval(""" "i love my 'shoes'" """).toJson()
         // TODO
-//        JSON.stringify(""""bu""") shouldEqual _eval(""" ""bu" """).toJson()
+//        Json.stringify(String.serializer(), """"bu""") shouldEqual _eval(""" ""bu" """).toJson()
     }
 }

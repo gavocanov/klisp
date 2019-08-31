@@ -1,14 +1,6 @@
 package tty
 
-import tty.colormath.Ansi16
-import tty.colormath.Ansi256
-import tty.colormath.CMYK
-import tty.colormath.ConvertibleColor
-import tty.colormath.HSL
-import tty.colormath.HSV
-import tty.colormath.LAB
-import tty.colormath.RGB
-import tty.colormath.XYZ
+import tty.colormath.*
 import kotlin.math.abs
 import kotlin.math.round
 

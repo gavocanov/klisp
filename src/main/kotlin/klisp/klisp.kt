@@ -48,16 +48,16 @@ fun repl() {
     }
 }
 
-fun evaluate(code: String, saveHistory: Boolean): exp = try {
+fun evaluate(code: String, saveHistory: Boolean, lsp: Boolean = false): exp = try {
     var _start = if (_PROFILE) Platform.getTimeNanos() else 0
     val parsed = derivativeParse(code)
     val parseTook = took(_start)
 
     _start = if (_PROFILE) Platform.getTimeNanos() else 0
-    val r = eval(parsed)
+    val r = eval(parsed, lsp)
     val evalTook = took(_start)
 
-    if (_PROFILE) {
+    if (_PROFILE && !lsp) {
         LOGGER.trace(":parse $parseTook")
         LOGGER.trace(":eval $evalTook")
     }

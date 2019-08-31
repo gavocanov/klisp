@@ -173,7 +173,7 @@ fun range(args: exps): collection {
     return list((f.asLong..l.asLong).map(::long))
 }
 
-fun lam(argNames: exp, body: exp, env: env): exp {
+fun lam(argNames: exp, body: exp, lsp: Boolean, env: env): exp {
     require(argNames is _list) { "arguments should be a list" }
     require(argNames.all { it is symbol }) { "argument names should all be valid symbols" }
     require(body is _list) { "body should be a list" }
@@ -181,7 +181,7 @@ fun lam(argNames: exp, body: exp, env: env): exp {
     return func { argVals ->
         val map = ChainMap(env)
         map.putAll(_argNames.zip(argVals))
-        eval(body, map)
+        eval(body, lsp, map)
     }
 }
 

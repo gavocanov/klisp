@@ -393,7 +393,7 @@ abstract class NonBlockingLexer<A> {
         get() = when {
             this.length == 1 -> Character(first)
             this.isNotEmpty() -> Catenation(first.toRL, rest.toRL)
-            else -> ε
+            else -> EMPTY
         }
 
     protected infix fun Char.thru(end: Char): RegularLanguage = CharSet((this..end).toSet())

@@ -1,10 +1,5 @@
 package tty.colormath
 
-import tty.colormath.ConvertibleColor
-import tty.colormath.HSV
-import tty.colormath.RGB
-import tty.colormath.roundToInt
-
 data class HSL(val h: Int, val s: Int, val l: Int) : ConvertibleColor {
     init {
         require(h in 0..360) { "h must be in range [0, 360]" }

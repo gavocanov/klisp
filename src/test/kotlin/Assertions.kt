@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 
-fun _eval(s: String): exp = eval(derivativeParse(s))
+fun _eval(s: String): exp = eval(derivativeParse(s), false)
 //        .also { println("$s -> $it") }
 
 private fun _eq(s: String, exp: exp) = assertEquals(exp, _eval(s), s)

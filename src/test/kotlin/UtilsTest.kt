@@ -1,11 +1,4 @@
-import klisp.None
-import klisp.Some
-import klisp.first
-import klisp.head
-import klisp.last
-import klisp.rest
-import klisp.tail
-import klisp.unApply
+import klisp.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -68,38 +61,38 @@ class UtilsTest {
     @Test
     fun destructuring() {
         assertEquals(
-                (listOf("a", listOf("b"))).toString(),
-                ("ab".toList() unApply 2).toString()
+            (listOf("a", listOf("b"))).toString(),
+            ("ab".toList() unApply 2).toString()
         )
 
         assertEquals(
-                (listOf("a", listOf("b", "c"))).toString(),
-                ("abc".toList() unApply 2).toString()
+            (listOf("a", listOf("b", "c"))).toString(),
+            ("abc".toList() unApply 2).toString()
         )
 
         assertEquals(
-                (listOf("a", "b", listOf("c"))).toString(),
-                ("abc".toList() unApply 3).toString()
+            (listOf("a", "b", listOf("c"))).toString(),
+            ("abc".toList() unApply 3).toString()
         )
 
         assertEquals(
-                (listOf((1), (2), (3), listOf((4)))).toString(),
-                (listOf(1, 2, 3, 4) unApply 4).toString()
+            (listOf((1), (2), (3), listOf((4)))).toString(),
+            (listOf(1, 2, 3, 4) unApply 4).toString()
         )
 
         assertEquals(
-                (listOf((1), null, (3), listOf((4)))).toString(),
-                (listOf(1, null, 3, 4) unApply 4).toString()
+            (listOf((1), null, (3), listOf((4)))).toString(),
+            (listOf(1, null, 3, 4) unApply 4).toString()
         )
 
         assertEquals(
-                (listOf((1), (2), emptyList<Any>())).toString(),
-                (listOf(1, 2) unApply 3).toString()
+            (listOf((1), (2), emptyList<Any>())).toString(),
+            (listOf(1, 2) unApply 3).toString()
         )
 
         assertEquals(
-                (listOf((1), (2), null, emptyList<Any>())).toString(),
-                (listOf(1, 2) unApply 4).toString()
+            (listOf((1), (2), null, emptyList<Any>())).toString(),
+            (listOf(1, 2) unApply 4).toString()
         )
 
         assertFailsWith(IllegalArgumentException::class) { listOf(1) unApply 1 }

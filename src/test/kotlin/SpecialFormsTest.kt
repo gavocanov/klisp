@@ -1,14 +1,4 @@
-import klisp.byte
-import klisp.char
-import klisp.float
-import klisp.func
-import klisp.keyword
-import klisp.list
-import klisp.long
-import klisp.map
-import klisp.set
-import klisp.string
-import klisp.symbol
+import klisp.*
 import kotlin.test.Test
 
 @ExperimentalUnsignedTypes

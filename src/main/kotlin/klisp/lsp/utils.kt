@@ -23,8 +23,7 @@ fun offset(content: String, line: Int, char: Int): Int {
     var lineOffset = 0
     while (lineOffset < line) {
         val nextChar = reader.read()
-        if (nextChar == -1)
-            throw IllegalStateException("reached end of file before reaching line $line")
+        check(nextChar != -1) { "reached end of file before reaching line $line" }
         if (nextChar.toChar() == '\n')
             lineOffset++
         offset++
@@ -33,8 +32,7 @@ fun offset(content: String, line: Int, char: Int): Int {
     var charOffset = 0
     while (charOffset < char) {
         val nextChar = reader.read()
-        if (nextChar == -1)
-            throw IllegalStateException("Reached end of file before reaching char $char")
+        check(nextChar != -1) { "Reached end of file before reaching char $char" }
         charOffset++
         offset++
     }

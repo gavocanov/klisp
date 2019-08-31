@@ -54,7 +54,7 @@ abstract class RegularLanguage {
      * @return the derivative of this regular expression with respect
      * to the end of the input.
      */
-    open fun deriveEND(): RegularLanguage = `∅`
+    open fun deriveEND(): RegularLanguage = NO_MATCH
 
     /**
      * @return true iff the regular expression accepts the empty string.
@@ -79,7 +79,7 @@ abstract class RegularLanguage {
         val (c1, c2) = this to re2
         return when {
             c1 is Character && c2 is Character -> c1 == c2
-            c1 is Character && c2 is AnyChar -> true
+            c1 is Character && c2 is ANY_CHAR -> true
             else -> false
         }
     }
@@ -88,54 +88,54 @@ abstract class RegularLanguage {
      * Kleene star; zero or more repetitions
      * @return zero or more repetitions of this regular expression.
      */
-    val `*`: RegularLanguage
+    val ZERO_OR_MORE: RegularLanguage
         get() = when {
             isEmptyString -> this
-            rejectsAll -> ε
+            rejectsAll -> EMPTY
             else -> Star(this)
         }
 
     /**
      * Exactly n repetitions
      */
-    infix fun `^`(n: Int): RegularLanguage = when {
-        n < 0 -> `∅`
-        n == 0 -> ε
+    infix fun EXACTLY(n: Int): RegularLanguage = when {
+        n < 0 -> NO_MATCH
+        n == 0 -> EMPTY
         n == 1 -> this
-        isEmptyString -> ε
-        rejectsAll -> `∅`
+        isEmptyString -> EMPTY
+        rejectsAll -> NO_MATCH
         else -> Repetition(this, n)
     }
 
     /**
      * @return one or more repetitions of this regular expression.
      */
-    val `+`: RegularLanguage
+    val ONE_OR_MORE: RegularLanguage
         get() = when {
             isEmptyString -> this
-            rejectsAll -> `∅`
-            else -> this `~` Star(this)
+            rejectsAll -> NO_MATCH
+            else -> this CONCAT Star(this)
         }
 
     /**
      * @return the option of this regular expression.
      */
-    val `?`: RegularLanguage
+    val OPTIONAL: RegularLanguage
         get() = when {
             isEmptyString -> this
-            rejectsAll -> ε
-            else -> ε `||` this
+            rejectsAll -> EMPTY
+            else -> EMPTY UNION this
         }
 
     /**
      * Concatenation
      * @return the smart concatenation of this and another regular expression.
      */
-    infix fun `~`(suffix: RegularLanguage): RegularLanguage = when {
+    infix fun CONCAT(suffix: RegularLanguage): RegularLanguage = when {
         isEmptyString -> suffix
         suffix.isEmptyString -> this
-        rejectsAll -> `∅`
-        suffix.rejectsAll -> `∅`
+        rejectsAll -> NO_MATCH
+        suffix.rejectsAll -> NO_MATCH
         else -> Catenation(this, suffix)
     }
 
@@ -157,5 +157,5 @@ abstract class RegularLanguage {
      * Union/alternation
      * @return the smart union of this and another regular expression from cache if available or compute if absent.
      */
-    infix fun `||`(choice2: RegularLanguage): RegularLanguage = unionCache(this to choice2)
+    infix fun UNION(choice2: RegularLanguage): RegularLanguage = unionCache(this to choice2)
 }

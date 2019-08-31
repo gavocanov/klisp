@@ -34,8 +34,7 @@ open class LiveStream<A>(open val source: LiveStreamSource<A>) {
         get() = when (val hc = headCache) {
             is Some -> hc()
             is None -> {
-                if (isPlugged)
-                    throw IllegalStateException("can't pull a plugged head")
+                check(!isPlugged) { "can't pull a plugged head" }
                 val value = Some(source.next)
                 headCache = value
                 value()

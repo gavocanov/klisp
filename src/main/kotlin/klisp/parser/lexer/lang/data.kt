@@ -10,8 +10,8 @@ package klisp.parser.lexer.lang
  */
 data class Character(private val ch: Char) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (c == ch) ε
-            else `∅`
+        if (c == ch) EMPTY
+        else NO_MATCH
 
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean = false
@@ -24,8 +24,8 @@ data class Character(private val ch: Char) : RegularLanguage() {
  */
 data class CharSet(private val set: Set<Char>) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (set.contains(c)) ε
-            else `∅`
+        if (set.contains(c)) EMPTY
+        else NO_MATCH
 
     override val acceptsEmptyString: Boolean = false
     override val rejectsAll: Boolean get() = set.isEmpty()
@@ -38,8 +38,8 @@ data class CharSet(private val set: Set<Char>) : RegularLanguage() {
  */
 data class NotCharSet(private val set: Set<Char>) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (set.contains(c)) `∅`
-            else ε
+        if (set.contains(c)) NO_MATCH
+        else EMPTY
 
     override val acceptsEmptyString: Boolean = false
     // NOTE: If the set size is the same as the
@@ -56,10 +56,10 @@ data class NotCharSet(private val set: Set<Char>) : RegularLanguage() {
 data class Catenation(val prefix: RegularLanguage,
                       val suffix: RegularLanguage) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            if (prefix.acceptsEmptyString)
-                ((prefix derive c) `~` suffix) `||` (suffix derive c)
-            else
-                (prefix derive c) `~` suffix
+        if (prefix.acceptsEmptyString)
+            ((prefix derive c) CONCAT suffix) UNION (suffix derive c)
+        else
+            (prefix derive c) CONCAT suffix
 
     override val acceptsEmptyString: Boolean
         get() = prefix.acceptsEmptyString && suffix.acceptsEmptyString
@@ -77,7 +77,7 @@ data class Union(private val choice1: RegularLanguage,
     : RegularLanguage() {
 
     override infix fun derive(c: Char): RegularLanguage =
-            (choice1 derive c) `||` (choice2 derive c)
+        (choice1 derive c) UNION (choice2 derive c)
 
     override val acceptsEmptyString: Boolean
         get() = choice1.acceptsEmptyString || choice2.acceptsEmptyString
@@ -92,7 +92,7 @@ data class Union(private val choice1: RegularLanguage,
  */
 data class Star(private val regex: RegularLanguage) : RegularLanguage() {
     override infix fun derive(c: Char): RegularLanguage =
-            (regex derive c) `~` (regex.`*`)
+        (regex derive c) CONCAT (regex.ZERO_OR_MORE)
 
     override val acceptsEmptyString: Boolean = true
     override val rejectsAll: Boolean = false
@@ -108,8 +108,8 @@ data class Repetition(private val regex: RegularLanguage,
     : RegularLanguage() {
 
     override infix fun derive(c: Char): RegularLanguage =
-            if (n <= 0) ε
-            else (regex derive c) `~` (regex `^` (n - 1))
+        if (n <= 0) EMPTY
+        else (regex derive c) CONCAT (regex EXACTLY (n - 1))
 
     override val acceptsEmptyString: Boolean
         get() = (n == 0) || ((n > 0) && regex.acceptsEmptyString)

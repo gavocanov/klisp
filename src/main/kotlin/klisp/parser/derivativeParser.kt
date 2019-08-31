@@ -9,8 +9,7 @@ import klisp.parser.lexer.tokens.*
 
 fun derivativeParse(s: String): exp {
     val balance = s.hasBalancedRoundBrackets()
-    if (balance.nok)
-        throw IllegalArgumentException("unbalanced brackets <left: ${balance.left}, right: ${balance.right}>")
+    require(!balance.nok) { "unbalanced brackets <left: ${balance.left}, right: ${balance.right}>" }
     val stream = LiveStream(s)
     val lexer = KLispLexer()
     lexer.lex(stream)

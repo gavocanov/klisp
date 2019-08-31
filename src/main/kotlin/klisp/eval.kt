@@ -2,8 +2,8 @@
 
 package klisp
 
-fun eval(x: exp, env: env = stdEnv): exp {
-    if (_DEBUG) LOGGER.debug(":eval <$x>")
+fun eval(x: exp, lsp: Boolean, env: env = stdEnv): exp {
+    if (_DEBUG && !lsp) LOGGER.debug(":eval <$x>")
     return when {
         x is unit -> x
         x is symbol && specialForm.isSpecial(x.value) -> {
@@ -36,7 +36,7 @@ fun eval(x: exp, env: env = stdEnv): exp {
         x is _list && x[0] is keyword -> {
             val (k, v) = x
             val m = try {
-                eval(v) as map
+                eval(v, lsp) as map
             } catch (_: Throwable) {
                 throw IllegalArgumentException("second arguments should eval to a map")
             }
@@ -46,12 +46,12 @@ fun eval(x: exp, env: env = stdEnv): exp {
             when (specialForm.fromSymbol(x[0] as symbol)) {
                 specialForm.DEF -> {
                     val (_, s: exp, e) = x
-                    env[s as symbol] = eval(e, env)
+                    env[s as symbol] = eval(e, lsp, env)
                     env[s] as exp
                 }
                 specialForm.IF -> {
                     val (_, test: exp, conseq, alt) = x
-                    val exp = when (val res = eval(test, env)) {
+                    val exp = when (val res = eval(test, lsp, env)) {
                         is bool -> res
                         is collection -> bool(res.isNotEmpty())
                         is number<*> -> bool(res.asDouble > 0.0)
@@ -60,25 +60,25 @@ fun eval(x: exp, env: env = stdEnv): exp {
                         else -> bool(true)
                     }
                     val conRes = if (exp.value) conseq else alt
-                    eval(conRes, env)
+                    eval(conRes, lsp, env)
                 }
                 specialForm.UNLESS -> {
                     val (_, test: exp, conseq) = x
-                    if (!(eval(test, env) as bool).value) eval(conseq, env) else unit
+                    if (!(eval(test, lsp, env) as bool).value) eval(conseq, lsp, env) else unit
                 }
                 specialForm.WHEN -> {
                     val (_, test: exp, conseq) = x
-                    if ((eval(test, env) as bool).value) eval(conseq, env) else unit
+                    if ((eval(test, lsp, env) as bool).value) eval(conseq, lsp, env) else unit
                 }
                 specialForm.FMAP -> {
                     val (_, _exp, _list) = x
-                    val list = eval(_list) as collection
-                    val exp = eval(_exp)
+                    val list = eval(_list, lsp) as collection
+                    val exp = eval(_exp, lsp)
                     fmap(exp, list)
                 }
                 specialForm.LAMBDA -> {
                     val (_, params, body) = x
-                    lam(params, body, env)
+                    lam(params, body, lsp, env)
                 }
                 specialForm.QUOTE -> {
                     val (_, exp) = x
@@ -89,15 +89,15 @@ fun eval(x: exp, env: env = stdEnv): exp {
                 }
                 specialForm.FILTER -> {
                     val (_, _exp, _list) = x
-                    val list = eval(_list) as collection
-                    val exp = eval(_exp)
+                    val list = eval(_list, lsp) as collection
+                    val exp = eval(_exp, lsp)
                     filter(exp, list)
                 }
                 specialForm.REDUCE -> {
                     val (_, _id, _exp, _list) = x
-                    val list = eval(_list) as collection
-                    val id = eval(_id)
-                    val exp = eval(_exp)
+                    val list = eval(_list, lsp) as collection
+                    val id = eval(_id, lsp)
+                    val exp = eval(_exp, lsp)
                     reduce(id, exp, list)
                 }
                 else -> throw IllegalArgumentException("unknown symbol <${x[0]}> in expression <$x>")
@@ -109,17 +109,17 @@ fun eval(x: exp, env: env = stdEnv): exp {
             x as _list
             val exp = x[0]
             val proc = try {
-                eval(exp, env) as func
+                eval(exp, lsp, env) as func
             } catch (_: Throwable) {
                 throw IllegalArgumentException("first argument should be a function")
             }
 
             if (_PROFILE && _DEBUG) proc.meta = x
 
-            val args = x.drop(1).map { eval(it, env) }
+            val args = x.drop(1).map { eval(it, lsp, env) }
             try {
                 val res = proc(args)
-                if (res is _list) throw IllegalStateException("res is a _list, that's a bug")
+                check(res !is _list) { "res is a _list, that's a bug" }
                 res
             } catch (t: Throwable) {
                 throw t.cause ?: t

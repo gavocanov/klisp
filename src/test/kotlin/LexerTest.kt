@@ -1,9 +1,4 @@
-import klisp.parser.lexer.tokens.CharToken
-import klisp.parser.lexer.tokens.DecToken
-import klisp.parser.lexer.tokens.IntToken
-import klisp.parser.lexer.tokens.KeywordToken
-import klisp.parser.lexer.tokens.StringToken
-import klisp.parser.lexer.tokens.SymbolToken
+import klisp.parser.lexer.tokens.*
 import kotlin.test.Test
 
 @ExperimentalUnsignedTypes

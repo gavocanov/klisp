@@ -1,10 +1,4 @@
-import klisp.byte
-import klisp.double
-import klisp.float
-import klisp.int
-import klisp.long
-import klisp.short
-import klisp.ulong
+import klisp.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

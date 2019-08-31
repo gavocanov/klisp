@@ -9,6 +9,7 @@ import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletableFuture.completedFuture
 
 class LSPWorkspace : WorkspaceService, LanguageClientAware {
     companion object {
@@ -42,7 +43,7 @@ class LSPWorkspace : WorkspaceService, LanguageClientAware {
                     .filter { !it.startsWith(";") && it.isNotBlank() }
 
                 for (line in lines) {
-                    val res = evaluate(line, false)
+                    val res = evaluate(line, false, true)
                     if (res is err) {
                         val diag = Diagnostic()
                         diag.severity = DiagnosticSeverity.Error
@@ -67,6 +68,6 @@ class LSPWorkspace : WorkspaceService, LanguageClientAware {
             }
         }
 
-        return CompletableFuture.completedFuture(null)
+        return completedFuture(null)
     }
 }
