@@ -2,6 +2,10 @@
 
 package klisp
 
+import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.fuel.core.Method
+import com.github.kittinunf.fuel.core.Parameters
+import com.github.kittinunf.fuel.core.extensions.jsonBody
 import klisp.parser.lexer.KLispLexer
 import klisp.parser.lexer.LiveStream
 import kotlin.math.absoluteValue
@@ -241,5 +245,96 @@ fun reduce(id: exp, exp: exp, list: exp): exp {
         }
         else -> throw IllegalStateException("this should not be...")
     }
+}
+
+fun http(vararg args: exp): exp {
+    val opts = args.toPlist(
+        listOf(
+            "get",
+            "put",
+            "post",
+            "delete",
+            "head",
+            "patch",
+            "no-json"
+        )
+    )
+
+    var url = ((opts["u".toKeyword()] ?: opts["url".toKeyword()]
+    ?: throw IllegalArgumentException("url is a obligatory parameter")) as string).unescaped()
+    if (!url.startsWith("http"))
+        url = "http://$url"
+
+    val met = opts["m".toKeyword()]
+        ?: opts["method".toKeyword()]
+        ?: opts["get".toKeyword()]
+        ?: opts["put".toKeyword()]
+        ?: opts["post".toKeyword()]
+        ?: opts["delete".toKeyword()]
+        ?: opts["head".toKeyword()]
+        ?: opts["patch".toKeyword()]
+
+    val q = opts["q".toKeyword()] ?: opts["query".toKeyword()]
+    val body = opts["b".toKeyword()] ?: opts["body".toKeyword()]
+    val h = opts["h".toKeyword()] ?: opts["headers".toKeyword()]
+    val noJson = opts["no-json".toKeyword()]
+    val auth = opts["a".toKeyword()] ?: opts["auth".toKeyword()]
+
+    val params: Parameters? = q?.let {
+        (it as map).map { (k, v) ->
+            val _v = when (v) {
+                is string -> v.unescaped()
+                is bool -> v.value
+                is number<*> -> v.numericValue
+                else -> throw IllegalArgumentException("unknown type <$v>")
+            }
+            k.asString to _v
+        }
+    }
+
+    val method = when (met) {
+        null, "get".toKeyword() -> Method.GET
+        "put".toKeyword() -> Method.PUT
+        "post".toKeyword() -> Method.POST
+        "delete".toKeyword() -> Method.DELETE
+        "head".toKeyword() -> Method.HEAD
+        "patch".toKeyword() -> Method.PATCH
+        else -> throw IllegalStateException("unknown method <$met>")
+    }
+
+    val req = Fuel.request(method, url, params)
+
+    if (h !== null) {
+        (h as map).forEach { (k, v) ->
+            val _k = k
+                .asString
+                .split("-")
+                .joinToString(separator = "-", transform = String::capitalize)
+            val _v = when (v) {
+                is string -> v.unescaped()
+                is bool -> v.value
+                is number<*> -> v.numericValue
+                else -> throw IllegalArgumentException("unknown type <$v>")
+            }
+            req.appendHeader(_k, _v)
+        }
+    }
+
+    if (auth !== null) {
+        require(auth is string) { "invalid auth parameter <$auth>, should be a string" }
+        require(auth.unescaped().contains(":")) { "invalid auth parameter <$auth>, should contain a : as separator (user:pass)" }
+        val b64 = B64Encoder.encodeToString(auth.unescaped().toByteArray())
+        req.appendHeader("Authorization", "Basic $b64")
+    }
+
+    when (body) {
+        is string -> req.body(body.unescaped(), Charsets.UTF_8)
+        is map -> req.jsonBody(body.toJson())
+    }
+
+    if (noJson === null)
+        req.appendHeader("Content-Type", "application/json")
+
+    return string(req.responseString().third.get())
 }
 

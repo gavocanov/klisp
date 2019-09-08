@@ -186,12 +186,12 @@ data class map(private val value: kmap) : atom, kmap by value, serializable {
     override fun toString(): String = ":map ${value.map { (k, v) -> "$k -> $v" }}"
 }
 
-data class func(private val func: (exps) -> exp) : exp, ((exps) -> exp) by func {
+data class func(val doc: String? = null, private val func: (exps) -> exp) : exp, ((exps) -> exp) by func {
     companion object {
         private fun parseMeta(m: exp?) = if (m !== null && _DEBUG) "<$m>" else ""
     }
 
-    override val docs: String = "function"
+    override val docs: String = doc ?: "function"
     override fun toJson(): String = throw IllegalStateException("can't serialize a function")
     override fun fromJson(s: String): atom = throw IllegalStateException("can't deserialize a function")
     override var meta: exp? = null
@@ -211,6 +211,7 @@ data class string(val value: String) : scalar() {
     override fun toJson(): String = Json.stringify(String.serializer(), value)
     override fun fromJson(s: String): atom = string(s)
     override fun toString(): String = ":string $value"
+    fun unescaped(): String = value.drop(1).dropLast(1)
 }
 
 data class symbol(val value: String) : scalar() {
@@ -225,6 +226,7 @@ data class keyword(val value: String) : atom, serializable {
     override fun fromJson(s: String): keyword = keyword(":$s")
     override var meta: exp? = null
     override fun toString(): String = ":keyword $value"
+    val asString: String = value.drop(1)
 }
 
 data class bool(val value: Boolean) : integer<Byte>(if (value) 1 else 0) {

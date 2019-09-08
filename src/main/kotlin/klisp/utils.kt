@@ -227,3 +227,20 @@ fun <O, N> case(matchFunc: (O) -> Boolean, result: (O) -> N)
 
 fun <O, N> wildcard(result: (O) -> N)
     : Case<O, N> = Case({ true }, result, true)
+
+fun String.toKeyword() = keyword(":$this")
+
+fun Array<out exp>.toPlist(wo: List<String> = emptyList()): Map<keyword, exp> {
+    val ex = wo.map { it.toKeyword() }
+    val s = this.toList() - ex
+    val vals = s.filterIndexed { i, _ -> i.rem(2) > 0 }
+    val keys = s.filterIndexed { i, _ -> i.rem(2) == 0 }
+
+    require(keys.all { it is keyword }) { "keys should be keywords" }
+    require(keys.size == vals.size) { "there should an equal number of keys and values" }
+
+    return keys.zip(vals)
+        .map { (k, v) -> (k as keyword) to v }
+        .toMap()
+}
+

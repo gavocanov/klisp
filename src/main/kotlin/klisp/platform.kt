@@ -30,6 +30,8 @@ val READER: LineReader = LineReaderBuilder.builder()
     .highlighter(KLHighlighter())
     .build()
 
+val B64Encoder: Base64.Encoder = Base64.getEncoder()
+
 object Platform {
     fun getHistoryFileName(): String =
         Paths.get(System.getProperty("user.home"), HISTORY_FILE_NAME + "_jvm").toString()

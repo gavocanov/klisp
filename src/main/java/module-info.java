@@ -9,4 +9,6 @@ module klisp.main {
     requires jline.reader;
     requires jline.terminal;
     requires gson;
+    requires fuel;
+    requires result;
 }
