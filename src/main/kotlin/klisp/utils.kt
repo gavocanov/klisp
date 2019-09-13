@@ -255,7 +255,7 @@ fun Any?.toExp(): exp = when (this) {
     is Boolean -> bool(this)
     is Set<*> -> set(this.map(Any?::toExp))
     is List<*> -> list(this.map(Any?::toExp))
-    is Map<*, *> -> map((this as Map<String, Any?>).map { (k, v) -> keyword(k) to v.toExp() }.toMap())
+    is Map<*, *> -> map((this as Map<String, Any?>).map { (k, v) -> k.toKeyword() to v.toExp() }.toMap())
     is UByte -> ubyte(this)
     is Byte -> byte(this)
     is UInt -> uint(this)
@@ -266,3 +266,4 @@ fun Any?.toExp(): exp = when (this) {
     is Double -> double(this)
     else -> throw IllegalStateException("deserialization of <$this (${this?.javaClass?.simpleName})> failed")
 }
+

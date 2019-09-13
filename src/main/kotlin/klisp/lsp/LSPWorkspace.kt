@@ -4,6 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonElement
 import klisp.err
 import klisp.evaluate
+import klisp.nok
+import klisp.ok
+import klisp.parser.hasBalancedRoundBrackets
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageClientAware
@@ -39,10 +42,19 @@ class LSPWorkspace : WorkspaceService, LanguageClientAware {
                 val hasSelection =
                     (end.character - start.character) != 0 || (end.line - start.line) > 1
 
-                // TODO, split by balanced brackets, not lines
                 val lines = (if (hasSelection) extractRange(content, range) else content)
                     .split('\n')
                     .filter { !it.startsWith(";") && it.isNotBlank() }
+                    .fold(emptyList<String>()) { a, n ->
+                        val last = a.lastOrNull() ?: ""
+                        if (last.hasBalancedRoundBrackets().nok) {
+                            val thisLine = last + n
+                            val bb = thisLine.hasBalancedRoundBrackets()
+                            if (bb.ok)
+                                a.dropLast(1) + thisLine
+                            else a + n
+                        } else a + n
+                    }
 
                 for (line in lines) {
                     val res = evaluate(line, saveHistory = false, lsp = true)
