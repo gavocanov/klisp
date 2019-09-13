@@ -133,6 +133,7 @@ class LSPTextDocument : TextDocumentService {
         }
     }
 
+    
     override fun completion(position: CompletionParams)
         : CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> = try {
         val std = stdEnv.entries.map { (s, e) ->
@@ -158,6 +159,7 @@ class LSPTextDocument : TextDocumentService {
         completedFuture(null)
     }
 
+    
     override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
         val txt = docs[position.textDocument.uri]
             ?: throw IllegalStateException("doc ${position.textDocument.uri} not found")

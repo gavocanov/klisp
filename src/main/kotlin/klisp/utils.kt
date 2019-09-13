@@ -230,9 +230,14 @@ fun <O, N> wildcard(result: (O) -> N)
 
 fun String.toKeyword() = keyword(":$this")
 
-fun Array<out exp>.toPlist(wo: List<String> = emptyList()): Map<keyword, exp> {
-    val ex = wo.map { it.toKeyword() }
-    val s = this.toList() - ex
+fun Array<out exp>.toPlist(without: List<String> = emptyList()): Map<keyword, exp> {
+    val exclusions = without.map { it.toKeyword() }
+    val s = this.toList() - exclusions
+    val extras = this
+        .toList()
+        .filter { it in exclusions }
+        .map { it as keyword to it }
+        .toMap()
     val vals = s.filterIndexed { i, _ -> i.rem(2) > 0 }
     val keys = s.filterIndexed { i, _ -> i.rem(2) == 0 }
 
@@ -241,6 +246,23 @@ fun Array<out exp>.toPlist(wo: List<String> = emptyList()): Map<keyword, exp> {
 
     return keys.zip(vals)
         .map { (k, v) -> (k as keyword) to v }
-        .toMap()
+        .toMap() + extras
 }
 
+@Suppress("UNCHECKED_CAST")
+fun Any?.toExp(): exp = when (this) {
+    is String -> string(this)
+    is Boolean -> bool(this)
+    is Set<*> -> set(this.map(Any?::toExp))
+    is List<*> -> list(this.map(Any?::toExp))
+    is Map<*, *> -> map((this as Map<String, Any?>).map { (k, v) -> keyword(k) to v.toExp() }.toMap())
+    is UByte -> ubyte(this)
+    is Byte -> byte(this)
+    is UInt -> uint(this)
+    is Int -> int(this)
+    is ULong -> ulong(this)
+    is Long -> long(this)
+    is Float -> float(this)
+    is Double -> double(this)
+    else -> throw IllegalStateException("deserialization of <$this (${this?.javaClass?.simpleName})> failed")
+}

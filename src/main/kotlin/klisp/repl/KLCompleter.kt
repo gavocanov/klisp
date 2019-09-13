@@ -60,6 +60,7 @@ class KLCompleter : Completer {
             ass + candidate + b_candidate
         }.flatten()
 
+
         private fun std() = stdEnv.map { (v, t) ->
             listOf(
                 Candidate(
@@ -83,8 +84,10 @@ class KLCompleter : Completer {
             )
         }.flatten()
 
+
         private fun all() = spec() + std()
     }
+
 
     override fun complete(reader: LineReader, line: ParsedLine, candidates: MutableList<Candidate>) {
         candidates.addAll(all())

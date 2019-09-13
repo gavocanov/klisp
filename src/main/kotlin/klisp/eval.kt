@@ -2,6 +2,7 @@
 
 package klisp
 
+// TODO (:kw map)
 fun eval(x: exp, lsp: Boolean, env: env = stdEnv): exp {
     if (_DEBUG && !lsp) LOGGER.debug(":eval <$x>")
     return when {

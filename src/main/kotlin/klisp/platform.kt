@@ -1,5 +1,6 @@
 package klisp
 
+import com.google.gson.Gson
 import klisp.repl.KLCompleter
 import klisp.repl.KLHighlighter
 import org.jline.reader.EndOfFileException
@@ -30,7 +31,7 @@ val READER: LineReader = LineReaderBuilder.builder()
     .highlighter(KLHighlighter())
     .build()
 
-val B64Encoder: Base64.Encoder = Base64.getEncoder()
+val GSON = Gson()
 
 object Platform {
     fun getHistoryFileName(): String =

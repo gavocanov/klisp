@@ -1,3 +1,5 @@
+(def res (http :url "https://api.chucknorris.io/jokes/random"))
+
 (define circle-area (lambda (r) (* pi (* r r))))
 
 (circle-area 3)

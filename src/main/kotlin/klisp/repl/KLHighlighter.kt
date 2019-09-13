@@ -37,6 +37,7 @@ class KLHighlighter : Highlighter {
         return join(SPACE, if (endSpace) ass + SPACE else ass)
     }
 
+
     private fun doWord(word: String): AttributedString {
         if (specialForm.isSpecial(word))
             return AttributedString(word, AttributedStyle.BOLD)

@@ -26,6 +26,7 @@ class LSPWorkspace : WorkspaceService, LanguageClientAware {
         this.client = client
     }
 
+
     override fun executeCommand(params: ExecuteCommandParams): CompletableFuture<Any> {
         val args = params.arguments
         when (params.command) {
@@ -38,12 +39,13 @@ class LSPWorkspace : WorkspaceService, LanguageClientAware {
                 val hasSelection =
                     (end.character - start.character) != 0 || (end.line - start.line) > 1
 
+                // TODO, split by balanced brackets, not lines
                 val lines = (if (hasSelection) extractRange(content, range) else content)
                     .split('\n')
                     .filter { !it.startsWith(";") && it.isNotBlank() }
 
                 for (line in lines) {
-                    val res = evaluate(line, false, true)
+                    val res = evaluate(line, saveHistory = false, lsp = true)
                     if (res is err) {
                         val diag = Diagnostic()
                         diag.severity = DiagnosticSeverity.Error

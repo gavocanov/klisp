@@ -5,6 +5,8 @@ package klisp
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.fuel.core.Parameters
+import com.github.kittinunf.fuel.core.extensions.authentication
+import com.github.kittinunf.fuel.core.extensions.cUrlString
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import klisp.parser.lexer.KLispLexer
 import klisp.parser.lexer.LiveStream
@@ -247,18 +249,10 @@ fun reduce(id: exp, exp: exp, list: exp): exp {
     }
 }
 
+@Suppress("UNCHECKED_CAST")
 fun http(vararg args: exp): exp {
-    val opts = args.toPlist(
-        listOf(
-            "get",
-            "put",
-            "post",
-            "delete",
-            "head",
-            "patch",
-            "no-json"
-        )
-    )
+    val opts =
+        args.toPlist(listOf("get", "put", "post", "delete", "head", "patch", "no-json"))
 
     var url = ((opts["u".toKeyword()] ?: opts["url".toKeyword()]
     ?: throw IllegalArgumentException("url is a obligatory parameter")) as string).unescaped()
@@ -274,13 +268,13 @@ fun http(vararg args: exp): exp {
         ?: opts["head".toKeyword()]
         ?: opts["patch".toKeyword()]
 
-    val q = opts["q".toKeyword()] ?: opts["query".toKeyword()]
+    val query = opts["q".toKeyword()] ?: opts["query".toKeyword()]
     val body = opts["b".toKeyword()] ?: opts["body".toKeyword()]
-    val h = opts["h".toKeyword()] ?: opts["headers".toKeyword()]
+    val headers = opts["h".toKeyword()] ?: opts["headers".toKeyword()]
     val noJson = opts["no-json".toKeyword()]
     val auth = opts["a".toKeyword()] ?: opts["auth".toKeyword()]
 
-    val params: Parameters? = q?.let {
+    val params: Parameters? = query?.let {
         (it as map).map { (k, v) ->
             val _v = when (v) {
                 is string -> v.unescaped()
@@ -304,8 +298,13 @@ fun http(vararg args: exp): exp {
 
     val req = Fuel.request(method, url, params)
 
-    if (h !== null) {
-        (h as map).forEach { (k, v) ->
+    if (noJson === null) {
+        req.appendHeader("Content-Type", "application/json")
+        req.appendHeader("Accept", "application/json")
+    }
+
+    if (headers !== null) {
+        (headers as map).forEach { (k, v) ->
             val _k = k
                 .asString
                 .split("-")
@@ -323,8 +322,8 @@ fun http(vararg args: exp): exp {
     if (auth !== null) {
         require(auth is string) { "invalid auth parameter <$auth>, should be a string" }
         require(auth.unescaped().contains(":")) { "invalid auth parameter <$auth>, should contain a : as separator (user:pass)" }
-        val b64 = B64Encoder.encodeToString(auth.unescaped().toByteArray())
-        req.appendHeader("Authorization", "Basic $b64")
+        val (u, p) = auth.unescaped().split(":")
+        req.authentication().basic(u, p)
     }
 
     when (body) {
@@ -332,9 +331,15 @@ fun http(vararg args: exp): exp {
         is map -> req.jsonBody(body.toJson())
     }
 
-    if (noJson === null)
-        req.appendHeader("Content-Type", "application/json")
-
-    return string(req.responseString().third.get())
+    val (res, err) = req.responseString().third
+    return when {
+        err !== null -> throw err.exception
+        res !== null -> {
+            if (noJson === null)
+                (GSON.fromJson(res, Map::class.java) as Map<String, Any?>).toExp()
+            else string(res)
+        }
+        else -> throw IllegalStateException("got no error and no response from server")
+    }
 }
 

@@ -49,8 +49,6 @@ dependencies {
     implementation "org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc:$lsp4j_version"
 
     implementation "com.github.kittinunf.fuel:fuel:$fuel_version"
-    implementation "com.github.kittinunf.fuel:fuel-coroutines:$fuel_version"
-    implementation "com.github.kittinunf.fuel:fuel-kotlinx-serialization:$fuel_version"
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'

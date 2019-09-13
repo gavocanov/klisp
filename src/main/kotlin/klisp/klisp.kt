@@ -10,15 +10,18 @@ var _DEBUG = false
 val VERSION_STR = "klisp-${Platform.platformId()} v$VERSION-$GIT_REVISION (git:$GIT_SHA), compiled on $BUILD_DATE"
 const val HISTORY_FILE_NAME = ".kl_history"
 
+
 fun main() {
     start()
 }
+
 
 private fun start() {
     LOGGER.info(VERSION_STR + ", pid: " + ProcessHandle.current().pid())
     LSPService(11666)
     repl()
 }
+
 
 fun repl() {
     val historyFileName = Platform.getHistoryFileName()
@@ -47,6 +50,7 @@ fun repl() {
             Platform.exit(0)
     }
 }
+
 
 fun evaluate(code: String, saveHistory: Boolean, lsp: Boolean = false): exp = try {
     var _start = if (_PROFILE) Platform.getTimeNanos() else 0
