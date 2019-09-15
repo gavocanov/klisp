@@ -17,29 +17,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 
-
 fun _eval(s: String): exp = eval(derivativeParse(s), false)
-//        .also { println("$s -> $it") }
-
 
 private fun _eq(s: String, exp: exp) = assertEquals(exp, _eval(s), s)
 
-
 infix fun String.eq(exp: exp) = _eq(this, exp)
-
-
 infix fun String.shouldEvalTo(exp: exp) = _eq(this, exp)
-
-
 infix fun String.shouldEvalTo(b: Boolean) = _eq(this, bool(b))
-
-
 infix fun String.shouldBe(b: Boolean) = _eq(this, bool(b) as exp)
-
-
 infix fun String.shouldNotBe(b: Boolean) = assertNotEquals(b, (_eval(this) as bool).value, this)
-
-
 infix fun String.shouldBeA(clazz: KClass<*>) = assertEquals(clazz, _eval(this)::class, this)
 
 private fun lex(s: String): List<Token> {

@@ -97,4 +97,45 @@ class UtilsTest {
 
         assertFailsWith(IllegalArgumentException::class) { listOf(1) unApply 1 }
     }
+
+    @Test
+    fun `plist without exclusions`() {
+        val a = arrayOf(
+            "a".toKeyword(),
+            "b".toKeyword(),
+            "c".toKeyword(),
+            "d".toKeyword(),
+            "e".toKeyword(),
+            "f".toKeyword()
+        ).toPlist()
+
+        val e = mapOf(
+            "a".toKeyword() to "b".toKeyword(),
+            "c".toKeyword() to "d".toKeyword(),
+            "e".toKeyword() to "f".toKeyword()
+        )
+
+        assertEquals(e, a)
+    }
+
+    @Test
+    fun `plist with exclusions`() {
+        val a = arrayOf(
+            "a".toKeyword(),
+            string("b"),
+            "c".toKeyword(),
+            string("d"),
+            "e".toKeyword(),
+            "f".toKeyword()
+        ).toPlist(listOf("e", "f"))
+
+        val e = mapOf(
+            "a".toKeyword() to string("b"),
+            "c".toKeyword() to string("d"),
+            "e".toKeyword() to "e".toKeyword(),
+            "f".toKeyword() to "f".toKeyword()
+        )
+
+        assertEquals(e, a)
+    }
 }

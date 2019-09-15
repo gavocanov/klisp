@@ -6,7 +6,6 @@ import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
 
 @ExperimentalUnsignedTypes
-
 class ConditionTest {
     @Test
     fun `if - then | else`() {

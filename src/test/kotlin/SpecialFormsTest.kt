@@ -3,7 +3,6 @@ import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlin.test.Test
 
 @ExperimentalUnsignedTypes
-
 class SpecialFormsTest {
     @Test
     fun `fmap tests`() {
