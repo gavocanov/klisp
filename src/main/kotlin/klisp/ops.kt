@@ -252,7 +252,7 @@ fun reduce(id: exp, exp: exp, list: exp): exp {
 @Suppress("UNCHECKED_CAST")
 fun http(vararg args: exp): exp {
     val opts =
-        args.toPlist(listOf("get", "put", "post", "delete", "head", "patch", "no-json"))
+        args.toPlist(listOf("get", "put", "post", "delete", "head", "patch", "no-json", "curl"))
 
     var url = ((opts["u".toKeyword()] ?: opts["url".toKeyword()]
     ?: throw IllegalArgumentException("url is a obligatory parameter")) as string).unescaped()
@@ -273,6 +273,7 @@ fun http(vararg args: exp): exp {
     val headers = opts["h".toKeyword()] ?: opts["headers".toKeyword()]
     val noJson = opts["no-json".toKeyword()]
     val auth = opts["a".toKeyword()] ?: opts["auth".toKeyword()]
+    val curl = opts["curl".toKeyword()]
 
     val params: Parameters? = query?.let {
         (it as map).map { (k, v) ->
@@ -330,6 +331,9 @@ fun http(vararg args: exp): exp {
         is string -> req.body(body.unescaped(), Charsets.UTF_8)
         is map -> req.jsonBody(body.toJson())
     }
+
+    if (curl !== null)
+        return string(req.cUrlString())
 
     val (res, err) = req.responseString().third
     return when {

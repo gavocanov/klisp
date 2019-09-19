@@ -264,6 +264,7 @@ fun Any?.toExp(): exp = when (this) {
     is Long -> long(this)
     is Float -> float(this)
     is Double -> double(this)
+    null -> nil
     else -> throw IllegalStateException("deserialization of <$this (${this?.javaClass?.simpleName})> failed")
 }
 
